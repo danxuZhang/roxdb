@@ -3,6 +3,8 @@
 .idea/
 .DS_Store
 
+compile_commands.json
+
 build/
 tags
 
