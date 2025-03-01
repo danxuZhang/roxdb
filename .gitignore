@@ -1,3 +1,11 @@
+.cache/
+.vscode/
+.idea/
+.DS_Store
+
+build/
+tags
+
 # Prerequisites
 *.d
 
