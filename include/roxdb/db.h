@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -95,16 +96,16 @@ struct QueryResult {
 auto ApplyFilter(const Schema &schema, const Record &record,
                  const ScalarFilter &filter) noexcept -> bool;
 
+class DbImpl;
+
 class DB {
   constexpr static const char *kVersion = "0.1.0";
 
  public:
   static auto GetVersion() noexcept -> std::string_view { return kVersion; }
 
-  DB(const std::string &path, const Schema &schema,
-     const DbOptions &options) noexcept
-      : path_(path), schema_(schema), options_(options) {};
-  ~DB() = default;
+  DB(const std::string &path, const Schema &schema, const DbOptions &options);
+  ~DB();
   DB(const DB &) = delete;  // non-copyable
 
   auto PutRecord(Key key, const Record &record) -> void;
@@ -115,10 +116,7 @@ class DB {
   auto KnnSearch(const Query &query) const -> std::vector<QueryResult>;
 
  private:
-  const std::string &path_;
-  const Schema &schema_;
-  const DbOptions &options_;
-  std::unordered_map<Key, Record> records_;  // in-memory storage
+  std::unique_ptr<DbImpl> impl_;
 
 };  // class DB
 
