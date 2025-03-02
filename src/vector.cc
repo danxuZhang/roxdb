@@ -38,6 +38,7 @@ auto IvfFlatIterator::Seek() -> void {
 auto IvfFlatIterator::Next() -> void {
   if (candidates_.empty()) {
     CollectCandidates();
+    ++current_prob_;
   } else {
     candidates_.pop();
   }
@@ -51,7 +52,6 @@ auto IvfFlatIterator::CollectCandidates() -> void {
     const auto distance = GetDistanceL2Sq(vector, query_);
     candidates_.push({key, vector, distance});
   }
-  ++current_prob_;
 }
 
 auto IvfFlatIterator::Valid() const -> bool {

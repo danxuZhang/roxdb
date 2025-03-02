@@ -12,7 +12,7 @@ namespace rox {
 
 struct DbOptions {
   bool create_if_missing = true;
-  size_t ivf_n_probe = 1;
+  size_t ivf_nprobe = 1;
 };  // struct DbOptions
 
 using Key = uint64_t;
@@ -83,6 +83,10 @@ struct QueryResult {
   Key id;
   Float distance;
 
+  bool operator<(const QueryResult &other) const {
+    return distance < other.distance;
+  }
+
   auto operator==(const QueryResult &other) const noexcept -> bool {
     return distance == other.distance;
   }
@@ -111,6 +115,9 @@ class DB {
   auto PutRecord(Key key, const Record &record) -> void;
   auto GetRecord(Key key) const -> Record;
   auto DeleteRecord(Key key) -> void;
+
+  auto SetCentroids(const std::string &field,
+                    const std::vector<Vector> &centroids) -> void;
 
   auto FullScan(const Query &query) const -> std::vector<QueryResult>;
   auto KnnSearch(const Query &query) const -> std::vector<QueryResult>;

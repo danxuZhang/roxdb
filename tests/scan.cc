@@ -8,9 +8,13 @@ TEST(Scan, SingleVectorScan) {
   rox::DbOptions options;
   options.create_if_missing = true;
   rox::Schema schema;
-  schema.AddVectorField("vec", 3, 0);
+  schema.AddVectorField("vec", 3, 1);
 
   rox::DB db("/tmp/roxdb", schema, options);
+
+  // Random centroid, unused
+  rox::Vector centroid = {1.0, 3.0, 5.0};
+  db.SetCentroids("vec", {centroid});
 
   // Put random record
   const size_t n_records = 10;
@@ -45,9 +49,12 @@ TEST(Scan, SingleVectorScanWithWeight) {
   options.create_if_missing = true;
   rox::Schema schema;
   schema.AddScalarField("val", rox::ScalarField::Type::kInt)
-      .AddVectorField("vec", 3, 0);
+      .AddVectorField("vec", 3, 1);
 
   rox::DB db("/tmp/roxdb", schema, options);
+  // Random centroid, unused
+  rox::Vector centroid = {1.0, 3.0, 5.0};
+  db.SetCentroids("vec", {centroid});
 
   // Put random record
   const size_t n_records = 10;
@@ -79,9 +86,15 @@ TEST(Scan, MultiVectorScan) {
   rox::DbOptions options;
   options.create_if_missing = true;
   rox::Schema schema;
-  schema.AddVectorField("vec1", 3, 0).AddVectorField("vec2", 4, 0);
+  schema.AddVectorField("vec1", 3, 1).AddVectorField("vec2", 4, 1);
 
   rox::DB db("/tmp/roxdb", schema, options);
+
+  // Random centroid, unused
+  rox::Vector centroid1 = {1.0, 3.0, 5.0};
+  rox::Vector centroid2 = {2.0, 4.0, 6.0, 8.0};
+  db.SetCentroids("vec1", {centroid1});
+  db.SetCentroids("vec2", {centroid2});
 
   rox::Vector target1 = {2.0, 4.0, 6.0};
   rox::Vector target2 = {2.0, 4.0, 6.0, 8.0};

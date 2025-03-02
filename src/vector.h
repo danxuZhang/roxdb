@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <functional>
@@ -54,9 +55,18 @@ class IvfFlatIndex {
     inverted_lists_.resize(nlist_);
   }
 
-  auto Add(const Key &key, const Vector &v) -> void {
+  auto Put(const Key &key, const Vector &v) -> void {
     const CentroidId cluster = AssignCentroid(v, centroids_, dim_);
     inverted_lists_[cluster].emplace_back(key, v);
+  }
+
+  auto Delete(const Key &key) -> void {
+    for (auto &list : inverted_lists_) {
+      auto it = std::ranges::remove_if(list, [&key](const auto &pair) {
+                  return pair.first == key;
+                }).begin();
+      list.erase(it, list.end());
+    }
   }
 
   auto SetCentroids(const std::vector<Vector> &centroids) -> void {

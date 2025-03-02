@@ -42,10 +42,16 @@ TEST(CRUD, HybridPutGet) {
   rox::Schema schema;
   schema.AddScalarField("name", rox::ScalarField::Type::kString)
       .AddScalarField("age", rox::ScalarField::Type::kInt)
-      .AddVectorField("v1", 3, 0)
-      .AddVectorField("v2", 4, 0);
+      .AddVectorField("v1", 3, 1)
+      .AddVectorField("v2", 4, 1);
 
   rox::DB db("/tmp/roxdb", schema, options);
+
+  // Random centroid, unused
+  rox::Vector centroid1 = {1.0, 3.0, 5.0};
+  rox::Vector centroid2 = {2.0, 4.0, 6.0, 8.0};
+  db.SetCentroids("v1", {centroid1});
+  db.SetCentroids("v2", {centroid2});
 
   // Put random record
   const size_t n_records = 10;
@@ -86,9 +92,13 @@ TEST(CRUD, Delete) {
   schema.AddScalarField("name", rox::ScalarField::Type::kString)
       .AddScalarField("age", rox::ScalarField::Type::kInt)
       .AddScalarField("height", rox::ScalarField::Type::kDouble)
-      .AddVectorField("vec", 4, 0);
+      .AddVectorField("vec", 4, 1);
 
   rox::DB db("/tmp/roxdb", schema, options);
+
+  // Random centroid, unused
+  rox::Vector centroid = {1.0, 3.0, 5.0, 7.0};
+  db.SetCentroids("vec", {centroid});
 
   // Put random record
   const size_t n_records = 10;

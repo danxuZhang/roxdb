@@ -2,6 +2,7 @@ add_executable(tests
     version.cc
     crud.cc
     scan.cc
+    knn.cc
 )
 
 target_link_libraries(tests

@@ -138,6 +138,11 @@ auto DB::GetRecord(Key key) const -> Record { return impl_->GetRecord(key); }
 
 auto DB::DeleteRecord(Key key) -> void { impl_->DeleteRecord(key); }
 
+auto DB::SetCentroids(const std::string &field,
+                      const std::vector<Vector> &centroids) -> void {
+  impl_->SetCentroids(field, centroids);
+}
+
 auto DB::FullScan(const Query &query) const -> std::vector<QueryResult> {
   return impl_->FullScan(query);
 }
