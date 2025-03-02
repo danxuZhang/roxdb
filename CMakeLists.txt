@@ -32,6 +32,19 @@ else()
     find_package(RocksDB REQUIRED)
 endif()
 
+option(BUILD_TESTS "Build tests" ON)
+if (BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.16.0  
+    )
+    FetchContent_MakeAvailable(googletest)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 option(USE_BUNDLED_FAISS "Use bundled FAISS" ON)
 if(USE_BUNDLED_FAISS)
     message(STATUS "Using bundled FAISS")
