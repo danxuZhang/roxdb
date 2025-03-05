@@ -1,0 +1,75 @@
+namespace rox.fb;
+
+table Vector {
+  values:[float];
+}
+
+table DoubleValue {
+  value:double;
+}
+
+table IntValue {
+  value:int;
+}
+
+table StringValue {
+  value:string;
+}
+
+// Union of table types, not primitive types
+union ScalarValue {
+  DoubleValue,
+  IntValue,
+  StringValue
+}
+
+table Scalar {
+  value:ScalarValue;
+}
+
+table Record {
+  id:uint64;
+  scalars:[Scalar];
+  vectors:[Vector];
+}
+
+enum ScalarFieldType:byte {
+  kDouble = 0,
+  kInt = 1,
+  kString = 2
+}
+
+table ScalarField {
+  name:string;
+  type:ScalarFieldType;
+}
+
+table VectorField {
+  name:string;
+  dim:uint;
+  num_centroids:uint;
+}
+
+table Schema {
+  vector_fields:[VectorField];
+  scalar_fields:[ScalarField];
+}
+
+table IvfListEntry {
+  key:uint64;
+  vector:Vector;
+}
+
+table IvfList {
+  entries:[IvfListEntry];
+}
+
+table IvfFlatIndex {
+  field_name:string;
+  dim:uint;
+  nlist:uint;
+  centroids:[Vector];
+  inverted_lists:[IvfList];
+}
+
+root_type Schema;

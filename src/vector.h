@@ -15,6 +15,7 @@ namespace rox {
 
 inline auto GetDistanceL2Sq(const Vector &a, const Vector &b) noexcept
     -> Float {
+  assert (a.size() == b.size());
   return std::transform_reduce(
       a.begin(), a.end(), b.begin(), 0.0, std::plus<>(),
       [](Float x, Float y) { return (x - y) * (x - y); });
@@ -91,6 +92,7 @@ class IvfFlatIndex {
 
  private:
   friend class IvfFlatIterator;
+  friend class RdbStorage;
   const std::string &field_name_;
   const size_t dim_;
   const size_t nlist_;

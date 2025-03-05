@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "roxdb/db.h"
+#include "storage.h"
 #include "vector.h"
 
 namespace rox {
@@ -12,7 +13,7 @@ class DbImpl {
  public:
   DbImpl(const std::string &path, const Schema &schema,
          const DbOptions &options) noexcept;
-  ~DbImpl() = default;
+  ~DbImpl();
   DbImpl(const DB &) = delete;  // non-copyable
 
   auto PutRecord(Key key, const Record &record) -> void;
@@ -29,7 +30,8 @@ class DbImpl {
   const std::string &path_;
   const Schema &schema_;
   const DbOptions &options_;
-  std::unordered_map<Key, Record> records_;  // in-memory storage
+  // std::unordered_map<Key, Record> records_;  // in-memory storage
+  std::unique_ptr<RdbStorage> storage_;
   std::unordered_map<std::string, std::unique_ptr<IvfFlatIndex>> indexes_;
 
   auto SingleVectorKnnSearch(const Query &query) const

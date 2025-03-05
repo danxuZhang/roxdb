@@ -3,6 +3,7 @@ add_executable(tests
     crud.cc
     scan.cc
     knn.cc
+    persistency.cc
 )
 
 target_link_libraries(tests

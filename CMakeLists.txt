@@ -63,6 +63,24 @@ else()
     find_package(FAISS REQUIRED)
 endif()
 
+option(USE_BUNDLED_FLATBUFFERS "Use bundled FlatBuffers" ON)
+if(USE_BUNDLED_FLATBUFFERS)
+    message(STATUS "Using bundled FlatBuffers")
+    set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Disable FlatBuffers tests")
+    set(FLATBUFFERS_BUILD_FLATC ON CACHE BOOL "Enable FlatBuffers compiler")
+    set(FLATBUFFERS_BUILD_FLATHASH OFF CACHE BOOL "Disable FlatBuffers hash utility")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/flatbuffers EXCLUDE_FROM_ALL)
+    add_library(FlatBuffers::flatbuffers ALIAS flatbuffers)
+    # Make flatc compiler available
+    set(FLATC_EXECUTABLE $<TARGET_FILE:flatc>)
+else()
+    find_package(FlatBuffers REQUIRED)
+    find_program(FLATC_EXECUTABLE flatc)
+    if(NOT FLATC_EXECUTABLE)
+        message(FATAL_ERROR "FlatBuffers compiler (flatc) not found")
+    endif()
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -90,4 +108,5 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         PUBLIC
         RocksDB::rocksdb
+        FlatBuffers::flatbuffers
 )
