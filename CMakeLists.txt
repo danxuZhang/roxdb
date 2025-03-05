@@ -19,6 +19,11 @@ if (BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+option(BUILD_BENCH "Build benchmarks" ON)
+if (BUILD_BENCH)
+    add_subdirectory(benchmarks/sift)
+endif()
+
 option(USE_BUNDLED_ROCKSDB "Use bundled RocksDB" ON)
 if(USE_BUNDLED_ROCKSDB)
     message(STATUS "Using bundled RocksDB")
