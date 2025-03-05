@@ -137,8 +137,8 @@ auto DbImpl::SingleVectorKnnSearch(const Query &query) const
   const auto &[field_name, query_vec, weight] = query.GetVectors().front();
   const auto &index = *indexes_.at(field_name);
 
-  // Create a Min Heap for top k results
-  std::priority_queue<QueryResult, std::vector<QueryResult>, std::greater<>> pq;
+  // Create a Max Heap for top k results
+  std::priority_queue<QueryResult> pq;
   auto it = IvfFlatIterator(index, query_vec, options_.ivf_nprobe);
 
   // Iterate over the index
@@ -155,9 +155,12 @@ auto DbImpl::SingleVectorKnnSearch(const Query &query) const
       continue;
     }
 
-    pq.push({key, distance});
-    if (pq.size() == k) {
-      break;
+    // Try to insert into the heap
+    if (pq.size() < k) {
+      pq.push({key, distance});
+    } else if (distance < pq.top().distance) {
+      pq.pop();
+      pq.push({key, distance});
     }
   }
 
@@ -167,6 +170,8 @@ auto DbImpl::SingleVectorKnnSearch(const Query &query) const
     results.push_back(pq.top());
     pq.pop();
   }
+  // Reverse the results to get the smallest distance first
+  std::ranges::reverse(results);
   return results;
 }
 

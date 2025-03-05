@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <utility>
 
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 #include "roxdb/db.h"
 
 namespace rox {
@@ -31,22 +35,38 @@ auto IvfFlatIterator::Seek() -> void {
     probe_lists_.push_back(centroid_idx);
   }
 
+#ifdef DEBUG
+  // Print probe clusters
+  std::cout << "Probing clusters: ";
+  for (const auto& idx : probe_lists_) {
+    std::cout << idx << " ";
+  }
+  std::cout << std::endl;
+#endif
+
   // Collect candidates from the first probe cluster
   CollectCandidates();
 }
 
 auto IvfFlatIterator::Next() -> void {
-  if (candidates_.empty()) {
-    CollectCandidates();
+  candidates_.pop();
+  while (candidates_.empty()) {
     ++current_prob_;
-  } else {
-    candidates_.pop();
+    if (current_prob_ >= nprobe_) {
+      return;
+    }
+    CollectCandidates();
   }
 }
 
 auto IvfFlatIterator::CollectCandidates() -> void {
   candidates_ = {};
   const auto current_centroid_idx = probe_lists_[current_prob_];
+
+#ifdef DEBUG
+  std::cout << "Collecting candidates from cluster " << current_centroid_idx
+            << std::endl;
+#endif
   for (const auto& [key, vector] :
        index_.inverted_lists_[current_centroid_idx]) {
     const auto distance = GetDistanceL2Sq(vector, query_);

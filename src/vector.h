@@ -121,7 +121,7 @@ class IvfFlatIterator {
     Float distance;
 
     auto operator<=>(const Candidate &other) const {
-      return other.distance <=> distance;  // inverse order for min heap
+      return distance <=> other.distance;
     }
   };
   const IvfFlatIndex &index_;
@@ -130,7 +130,7 @@ class IvfFlatIterator {
 
   std::vector<CentroidId> probe_lists_;  // clusters to probe
   size_t current_prob_;                  // current probe cluster index
-  std::priority_queue<Candidate>
+  std::priority_queue<Candidate, std::vector<Candidate>, std::greater<>>
       candidates_;  // candidates in the current probe cluster (min heap)
 
   auto CollectCandidates() -> void;
