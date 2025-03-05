@@ -1,5 +1,8 @@
 #pragma once
 
+#include <limits>
+#include <memory>
+
 #include "roxdb/db.h"
 #include "vector.h"
 
@@ -31,6 +34,14 @@ class DbImpl {
 
   auto SingleVectorKnnSearch(const Query &query) const
       -> std::vector<QueryResult>;
+
+  struct Iter {
+    const std::string &field;
+    const Vector &query;
+    const Float weight;
+    std::unique_ptr<IvfFlatIterator> it;
+    Float last_seen_distance = std::numeric_limits<Float>::max();
+  };  // Iterator for Faign's Threshold Algorithm
   auto MultiVectorKnnSearch(const Query &query) const
       -> std::vector<QueryResult>;
 };  // class DbImpl
