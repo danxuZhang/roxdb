@@ -6,6 +6,7 @@
 #include <functional>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "roxdb/db.h"

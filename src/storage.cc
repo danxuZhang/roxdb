@@ -7,6 +7,7 @@
 #include "flatbuffers_generated.h"
 #include "rocksdb/db.h"
 #include "roxdb/db.h"
+#include "vector.h"
 
 namespace rox {
 
@@ -319,7 +320,7 @@ auto RdbStorage::PutIndex(const std::string& field, const IvfFlatIndex& index)
                      builder.GetSize()));
 }
 
-auto RdbStorage::GetIndex(const std::string& field) -> IvfFlatIndex {
+auto RdbStorage::GetIndex(const std::string& field) -> std::unique_ptr<IvfFlatIndex> {
   std::string index_key = MakeIndexKey(field);
   std::string value;
   rocksdb::ReadOptions read_options;
@@ -335,7 +336,10 @@ auto RdbStorage::GetIndex(const std::string& field) -> IvfFlatIndex {
   size_t dim = fb_index->dim();
   size_t nlist = fb_index->nlist();
 
-  IvfFlatIndex index(field_name, dim, nlist);
+  // IvfFlatIndex index(field_name, dim, nlist);
+  std::unique_ptr<IvfFlatIndex> index =
+      std::make_unique<IvfFlatIndex>(field_name, dim, nlist);
+
 
   // Extract centroids
   std::vector<Vector> centroids;
@@ -351,7 +355,7 @@ auto RdbStorage::GetIndex(const std::string& field) -> IvfFlatIndex {
       centroids.push_back(std::move(vec));
     }
   }
-  index.SetCentroids(centroids);
+  index->SetCentroids(centroids);
 
   // Extract inverted lists
   std::vector<IvfList> inverted_lists;
@@ -374,7 +378,7 @@ auto RdbStorage::GetIndex(const std::string& field) -> IvfFlatIndex {
       inverted_lists.push_back(std::move(ivf_list));
     }
   }
-  index.SetInvertedLists(inverted_lists);
+  index->SetInvertedLists(inverted_lists);
 
   return index;
 }

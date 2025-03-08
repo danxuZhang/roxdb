@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <compare>
 #include <memory>
 #include <queue>
 #include <ranges>
@@ -23,7 +22,13 @@ DbImpl::DbImpl(const std::string &path, const DbOptions &options)
         "Can only open existing database without Schema");
   }
   storage_ = std::make_unique<RdbStorage>(path, options);
+
+  // Load schema
   schema_ = storage_->GetSchema();
+  // Load indexes
+  for (const auto &field : schema_.vector_fields) {
+    indexes_[field.name] = storage_->GetIndex(field.name);
+  }
 }
 
 DbImpl::DbImpl(const std::string &path, const DbOptions &options,

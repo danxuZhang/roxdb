@@ -29,7 +29,7 @@ class RdbStorage {
   // Scalar;
 
   auto PutIndex(const std::string& field, const IvfFlatIndex& index) -> void;
-  auto GetIndex(const std::string& field) -> IvfFlatIndex;
+  auto GetIndex(const std::string& field) -> std::unique_ptr<IvfFlatIndex>;
   auto DeleteIndex(const std::string& field) -> void;
 
   auto GetIterator(std::string_view prefix)
