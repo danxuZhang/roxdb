@@ -1,0 +1,78 @@
+perf stat -e cache-references,cache-misses,cycles,instructions,branches,branch-misses,L1-dcache-load-misses,L1-dcache-loads,LLC-load-misses,LLC-loads \
+	./perf_scalar
+Neither AVX2 nor AVX512F is enabled
+Dimension: 256
+Number of iterations: 16777216
+Elapsed time: 1606 ms
+
+ Performance counter stats for './perf_scalar':
+
+           613,024      cache-references                                                        (62.39%)
+           104,517      cache-misses                     #   17.05% of all cache refs           (62.64%)
+     5,938,566,937      cycles                                                                  (62.67%)
+    26,069,852,412      instructions                     #    4.39  insn per cycle              (62.67%)
+     1,159,123,115      branches                                                                (62.67%)
+        16,922,284      branch-misses                    #    1.46% of all branches             (62.49%)
+            96,293      L1-dcache-load-misses            #    0.00% of all L1-dcache accesses   (62.24%)
+     8,768,549,900      L1-dcache-loads                                                         (62.21%)
+   <not supported>      LLC-load-misses                                                       
+   <not supported>      LLC-loads                                                             
+
+       1.607960746 seconds time elapsed
+
+       1.607976000 seconds user
+       0.000000000 seconds sys
+
+
+perf stat -e cache-references,cache-misses,cycles,instructions,branches,branch-misses,L1-dcache-load-misses,L1-dcache-loads,LLC-load-misses,LLC-loads \
+	./perf_avx2
+AVX2 is enabled
+Dimension: 256
+Number of iterations: 16777216
+Elapsed time: 375 ms
+
+ Performance counter stats for './perf_avx2':
+
+           366,382      cache-references                                                        (61.78%)
+            72,886      cache-misses                     #   19.89% of all cache refs           (61.77%)
+     1,391,633,979      cycles                                                                  (61.77%)
+     4,419,101,967      instructions                     #    3.18  insn per cycle              (61.94%)
+       621,753,594      branches                                                                (63.00%)
+            27,836      branch-misses                    #    0.00% of all branches             (63.71%)
+            34,933      L1-dcache-load-misses            #    0.00% of all L1-dcache accesses   (63.54%)
+     1,411,148,502      L1-dcache-loads                                                         (62.48%)
+   <not supported>      LLC-load-misses                                                       
+   <not supported>      LLC-loads                                                             
+
+       0.377695132 seconds time elapsed
+
+       0.377809000 seconds user
+       0.000000000 seconds sys
+
+
+perf stat -e cache-references,cache-misses,cycles,instructions,branches,branch-misses,L1-dcache-load-misses,L1-dcache-loads,LLC-load-misses,LLC-loads \
+	./perf_avx512f
+AVX512F is enabled
+Dimension: 256
+Number of iterations: 16777216
+Elapsed time: 252 ms
+
+ Performance counter stats for './perf_avx512f':
+
+        19,940,693      cache-references                                                        (62.15%)
+            63,540      cache-misses                     #    0.32% of all cache refs           (62.15%)
+       936,978,243      cycles                                                                  (62.15%)
+     2,798,409,090      instructions                     #    2.99  insn per cycle              (62.15%)
+       353,302,894      branches                                                                (62.28%)
+            20,061      branch-misses                    #    0.01% of all branches             (63.09%)
+        19,570,696      L1-dcache-load-misses            #    1.71% of all L1-dcache accesses   (63.09%)
+     1,145,270,998      L1-dcache-loads                                                         (62.95%)
+   <not supported>      LLC-load-misses                                                       
+   <not supported>      LLC-loads                                                             
+
+       0.254268799 seconds time elapsed
+
+       0.254433000 seconds user
+       0.000000000 seconds sys
+
+

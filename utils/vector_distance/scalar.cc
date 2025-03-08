@@ -1,3 +1,5 @@
+#include <numeric>
+
 #include "distance.h"
 
 namespace rox {

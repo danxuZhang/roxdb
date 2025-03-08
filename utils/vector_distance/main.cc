@@ -66,6 +66,7 @@ int main() {
   const size_t rounds = 10;
 
   std::ofstream csv_file("benchmark_results.csv");
+  // Write CSV header
   csv_file
       << "round,dim,scalar_time,avx2_time,avx512_time,diff_avx2,diff_avx512"
       << std::endl;

@@ -1,13 +1,7 @@
 #pragma once
 
 #include <cassert>
-#include <cstdint>
-#include <numeric>
 #include <vector>
-
-// #if defined(__AVX512F__) || defined(__AVX2__)
-#include <immintrin.h>
-// #endif
 
 using Float = float;
 using Vector = std::vector<Float>;
