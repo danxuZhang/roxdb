@@ -36,9 +36,8 @@ inline auto AssignCentroid(const Vector &v,
 
 class IvfFlatIndex {
  public:
-  IvfFlatIndex(const std::string &field_name, const size_t dim,
-               const size_t nlist)
-      : field_name_(field_name), dim_(dim), nlist_(nlist) {
+  IvfFlatIndex(std::string field_name, const size_t dim, const size_t nlist)
+      : field_name_(std::move(field_name)), dim_(dim), nlist_(nlist) {
     centroids_.resize(nlist_);
     inverted_lists_.resize(nlist_);
   }
@@ -80,7 +79,7 @@ class IvfFlatIndex {
  private:
   friend class IvfFlatIterator;
   friend class RdbStorage;
-  const std::string &field_name_;
+  const std::string field_name_;
   const size_t dim_;
   const size_t nlist_;
 

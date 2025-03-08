@@ -154,14 +154,17 @@ auto CompareResults(const rox::DB& db,
                     const std::vector<rox::QueryResult>& results,
                     const std::vector<rox::QueryResult>& gt) -> void {
   assert(results.size() == gt.size());
+  std::cout << "Comparing results..." << std::endl;
   auto k = results.size();
+  std::cout << "Found  " << results.size() << " results" << std::endl;
   for (auto i = 0; i < k; ++i) {
     auto result = results[i];
     auto gt_result = gt[i];
     auto record = db.GetRecord(result.id);
     auto gt_record = db.GetRecord(gt_result.id);
     std::cout << "Result " << i << ": " << result.id
-              << " (distance: " << result.distance << ")" << "\t\t\t";
+              << " (distance: " << result.distance << ")"
+              << "\t\t\t";
     std::cout << "GT " << i << ": " << gt_result.id
               << " (distance: " << gt_result.distance << ")" << std::endl;
   }

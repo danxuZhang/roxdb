@@ -1,13 +1,13 @@
 add_executable(
-    single_vector 
-    single_vector.cc utils.cc utils.h
+    load_sift
+    load_sift.cc utils.cc utils.h
 )
 
-target_link_libraries(single_vector PRIVATE ${PROJECT_NAME} FAISS::faiss) 
+target_link_libraries(load_sift PRIVATE ${PROJECT_NAME} FAISS::faiss) 
 
 add_executable(
-    multi_vector 
-    multi_vector.cc utils.cc utils.h
+    search_sift
+    search_sift.cc utils.cc utils.h
 )
 
-target_link_libraries(multi_vector PRIVATE ${PROJECT_NAME} FAISS::faiss) 
+target_link_libraries(search_sift PRIVATE ${PROJECT_NAME} FAISS::faiss) 

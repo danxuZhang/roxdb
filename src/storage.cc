@@ -255,7 +255,7 @@ auto RdbStorage::GetRecord(Key key) const -> Record {
         result.vectors.push_back(std::move(vector));
       }
     }  // if (fb_vectors)
-  }  // if (fb_scalars)
+  }    // if (fb_scalars)
   return result;
 }
 
@@ -320,7 +320,8 @@ auto RdbStorage::PutIndex(const std::string& field, const IvfFlatIndex& index)
                      builder.GetSize()));
 }
 
-auto RdbStorage::GetIndex(const std::string& field) -> std::unique_ptr<IvfFlatIndex> {
+auto RdbStorage::GetIndex(const std::string& field)
+    -> std::unique_ptr<IvfFlatIndex> {
   std::string index_key = MakeIndexKey(field);
   std::string value;
   rocksdb::ReadOptions read_options;
@@ -339,7 +340,6 @@ auto RdbStorage::GetIndex(const std::string& field) -> std::unique_ptr<IvfFlatIn
   // IvfFlatIndex index(field_name, dim, nlist);
   std::unique_ptr<IvfFlatIndex> index =
       std::make_unique<IvfFlatIndex>(field_name, dim, nlist);
-
 
   // Extract centroids
   std::vector<Vector> centroids;

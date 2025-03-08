@@ -25,9 +25,22 @@ DbImpl::DbImpl(const std::string &path, const DbOptions &options)
 
   // Load schema
   schema_ = storage_->GetSchema();
+  // DEBUG: Print schema fields
+  // for (const auto &field : schema_.vector_fields) {
+  //   std::cout << "Vector Field: " << field.name << " " << field.dim << " "
+  //             << field.num_centroids << std::endl;
+  // }
+
   // Load indexes
   for (const auto &field : schema_.vector_fields) {
     indexes_[field.name] = storage_->GetIndex(field.name);
+  }
+  // Populate schema idx maps
+  for (size_t i = 0; i < schema_.vector_fields.size(); ++i) {
+    schema_.vector_field_idx[schema_.vector_fields[i].name] = i;
+  }
+  for (size_t i = 0; i < schema_.scalar_fields.size(); ++i) {
+    schema_.scalar_field_idx[schema_.scalar_fields[i].name] = i;
   }
 }
 
