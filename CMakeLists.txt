@@ -81,6 +81,11 @@ else()
     endif()
 endif()
 
+option(USE_AVX512 "Use AVX512 SIMD" ON)
+if (USE_AVX512)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__AVX512F__ -mavx512f")
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
