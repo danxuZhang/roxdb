@@ -11,10 +11,12 @@ namespace rox {
 
 class DbImpl {
  public:
-  DbImpl(const std::string &path, const Schema &schema,
-         const DbOptions &options) noexcept;
+  explicit DbImpl(const std::string &path, const DbOptions &options);
+  explicit DbImpl(const std::string &path, const DbOptions &options,
+                  const Schema &schema) noexcept;
   ~DbImpl();
-  DbImpl(const DB &) = delete;  // non-copyable
+  DbImpl(const DB &) = delete;             // non-copyable
+  DbImpl &operator=(const DB &) = delete;  // non-assignable
 
   auto PutRecord(Key key, const Record &record) -> void;
   auto GetRecord(Key key) const -> Record;
@@ -28,8 +30,8 @@ class DbImpl {
 
  private:
   const std::string &path_;
-  const Schema &schema_;
   const DbOptions &options_;
+  Schema schema_;
   // std::unordered_map<Key, Record> records_;  // in-memory storage
   std::unique_ptr<RdbStorage> storage_;
   std::unordered_map<std::string, std::unique_ptr<IvfFlatIndex>> indexes_;

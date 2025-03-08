@@ -19,7 +19,7 @@ TEST(Persistency, ScalarPersistency) {
         .AddScalarField("double", rox::ScalarField::Type::kDouble)
         .AddScalarField("string", rox::ScalarField::Type::kString);
 
-    rox::DB db(kPath, schema, options);
+    rox::DB db(kPath, options, schema);
 
     // Put random record
     const size_t n_records = 10;
@@ -44,7 +44,7 @@ TEST(Persistency, ScalarPersistency) {
   {
     rox::DbOptions options;
     options.create_if_missing = false;
-    rox::DB db(kPath, rox::Schema{}, options);
+    rox::DB db(kPath, options);
 
     // Get records
     const size_t n_records = 10;
@@ -78,7 +78,7 @@ TEST(Persistency, VectorPersistency) {
     rox::DbOptions options;
     options.create_if_missing = true;
 
-    rox::DB db(kPath, schema, options);
+    rox::DB db(kPath, options, schema);
 
     rox::Vector centroid1 = {1.0, 3.0, 5.0};
     rox::Vector centroid2 = {2.0, 4.0, 6.0, 8.0};
@@ -112,7 +112,7 @@ TEST(Persistency, VectorPersistency) {
   {
     rox::DbOptions options;
     options.create_if_missing = false;
-    rox::DB db(kPath, rox::Schema{}, options);
+    rox::DB db(kPath, options, schema);
 
     // Get records
     const size_t n_records = 10;

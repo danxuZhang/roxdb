@@ -108,9 +108,12 @@ class DB {
  public:
   static auto GetVersion() noexcept -> std::string_view { return kVersion; }
 
-  DB(const std::string &path, const Schema &schema, const DbOptions &options);
+  explicit DB(const std::string &path, const DbOptions &options);
+  explicit DB(const std::string &path, const DbOptions &options,
+              const Schema &schema);
   ~DB();
-  DB(const DB &) = delete;  // non-copyable
+  DB(const DB &) = delete;             // non-copyable
+  DB &operator=(const DB &) = delete;  // non-assignable
 
   auto PutRecord(Key key, const Record &record) -> void;
   auto GetRecord(Key key) const -> Record;

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <compare>
 #include <memory>
 #include <queue>
 #include <ranges>
@@ -15,9 +16,19 @@
 
 namespace rox {
 
-DbImpl::DbImpl(const std::string &path, const Schema &schema,
-               const DbOptions &options) noexcept
-    : path_(path), schema_(schema), options_(options) {
+DbImpl::DbImpl(const std::string &path, const DbOptions &options)
+    : path_(path), options_(options) {
+  if (options.create_if_missing) {
+    throw std::invalid_argument(
+        "Can only open existing database without Schema");
+  }
+  storage_ = std::make_unique<RdbStorage>(path, options);
+  schema_ = storage_->GetSchema();
+}
+
+DbImpl::DbImpl(const std::string &path, const DbOptions &options,
+               const Schema &schema) noexcept
+    : path_(path), options_(options), schema_(schema) {
   // Create Index, one per vector field
   for (const auto &field : schema.vector_fields) {
     indexes_[field.name] = std::make_unique<IvfFlatIndex>(field.name, field.dim,
@@ -25,6 +36,7 @@ DbImpl::DbImpl(const std::string &path, const Schema &schema,
   }
   // Create Storage
   storage_ = std::make_unique<RdbStorage>(path, options);
+  storage_->PutSchema(schema_);
 }
 
 DbImpl::~DbImpl() {
@@ -102,6 +114,10 @@ auto DbImpl::FullScan(const Query &query) const -> std::vector<QueryResult> {
   for (auto it = storage_->GetIterator(RdbStorage::kRecordPrefix); it->Valid();
        it->Next()) {
     const auto rdb_key = it->key();
+    std::string_view key_view(rdb_key.data(), rdb_key.size());
+    if (!key_view.starts_with(RdbStorage::kRecordPrefix)) {
+      break;  // Skip keys that don't have the correct prefix
+    }
     const auto key = RdbStorage::GetKey(rdb_key);
     const auto record = storage_->GetRecord(key);
 

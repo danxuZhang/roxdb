@@ -2,6 +2,7 @@
 #include <roxdb/db.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <vector>
 
 TEST(Scan, SingleVectorScan) {
@@ -10,7 +11,10 @@ TEST(Scan, SingleVectorScan) {
   rox::Schema schema;
   schema.AddVectorField("vec", 3, 1);
 
-  rox::DB db("/tmp/roxdb", schema, options);
+  if (std::filesystem::exists("/tmp/roxdb")) {
+    std::filesystem::remove_all("/tmp/roxdb");
+  }
+  rox::DB db("/tmp/roxdb", options, schema);
 
   // Random centroid, unused
   rox::Vector centroid = {1.0, 3.0, 5.0};
@@ -51,7 +55,10 @@ TEST(Scan, SingleVectorScanWithWeight) {
   schema.AddScalarField("val", rox::ScalarField::Type::kInt)
       .AddVectorField("vec", 3, 1);
 
-  rox::DB db("/tmp/roxdb", schema, options);
+  if (std::filesystem::exists("/tmp/roxdb")) {
+    std::filesystem::remove_all("/tmp/roxdb");
+  }
+  rox::DB db("/tmp/roxdb", options, schema);
   // Random centroid, unused
   rox::Vector centroid = {1.0, 3.0, 5.0};
   db.SetCentroids("vec", {centroid});
@@ -88,7 +95,10 @@ TEST(Scan, MultiVectorScan) {
   rox::Schema schema;
   schema.AddVectorField("vec1", 3, 1).AddVectorField("vec2", 4, 1);
 
-  rox::DB db("/tmp/roxdb", schema, options);
+  if (std::filesystem::exists("/tmp/roxdb")) {
+    std::filesystem::remove_all("/tmp/roxdb");
+  }
+  rox::DB db("/tmp/roxdb", options, schema);
 
   // Random centroid, unused
   rox::Vector centroid1 = {1.0, 3.0, 5.0};

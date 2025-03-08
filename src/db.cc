@@ -125,8 +125,11 @@ auto ApplyFilter(const Schema &schema, const Record &record,
   return false;
 }
 
-DB::DB(const std::string &path, const Schema &schema, const DbOptions &options)
-    : impl_(std::make_unique<DbImpl>(path, schema, options)) {}
+DB::DB(const std::string &path, const DbOptions &options)
+    : impl_(std::make_unique<DbImpl>(path, options)) {}
+
+DB::DB(const std::string &path, const DbOptions &options, const Schema &schema)
+    : impl_(std::make_unique<DbImpl>(path, options, schema)) {}
 
 DB::~DB() = default;
 

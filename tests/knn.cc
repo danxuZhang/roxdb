@@ -13,7 +13,7 @@ TEST(KNN, SingleVector) {
   schema.AddVectorField("vec", 2, 4);
 
   rox::DbOptions options;
-  rox::DB db("/tmp/roxdb", schema, options);
+  rox::DB db("/tmp/roxdb", options, schema);
 
   const rox::Vector c0 = {0, 0};
   const rox::Vector c1 = {0, 1};
@@ -68,7 +68,7 @@ TEST(KNN, SingleVectorWFilter) {
 
   rox::DbOptions options;
   options.ivf_nprobe = 3;
-  rox::DB db("/tmp/roxdb", schema, options);
+  rox::DB db("/tmp/roxdb", options, schema);
 
   const rox::Vector c0 = {0, 0};
   const rox::Vector c1 = {0, 1};

@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
   rox::DbOptions options;
   options.ivf_nprobe = n_probe;
-  rox::DB db("/tmp/roxdb", schema, options);
+  rox::DB db("/tmp/roxdb", options, schema);
 
   auto clustering_start = std::chrono::high_resolution_clock::now();
   const auto centroids1 = FindCentroids(vectors1, n_centroids);
