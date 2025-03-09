@@ -1,10 +1,26 @@
 #pragma once
 
+#include <H5Cpp.h>
+#include <H5File.h>
+
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
 #include "roxdb/db.h"
+
+struct Dataset {
+  std::vector<rox::Vector> sift;  // SIFT vectors (128D)
+  std::vector<rox::Vector> gist;  // GIST vectors (960D)
+  std::vector<int> image_id;      // Image IDs
+  std::vector<int> category;      // Categories
+  std::vector<float> confidence;  // Confidence values
+  std::vector<int> votes;         // Vote counts
+  int num_records;                // Number of records in the dataset
+  int sift_dim;                   // Dimension of SIFT vectors
+  int gist_dim;                   // Dimension of GIST vectors
+};
 
 class FvecsReader {
  public:
@@ -72,25 +88,20 @@ class FvecsReader {
   }
 };  // class FvecsReader
 
-auto LoadFvecs(const std::string& path, int num_vectors)
+auto PrintHdf5FileInfo(const std::string& filePath) -> void;
+
+template <typename T>
+auto ReadAttribute(const H5::H5File& file, const std::string& attrName) -> T;
+
+auto ReadVector(const H5::H5File& file, const std::string& datasetName)
     -> std::vector<rox::Vector>;
 
-auto FindCentroids(const std::vector<rox::Vector>& vectors,
-                   size_t num_centroids) -> std::vector<rox::Vector>;
+auto ReadIntDataset(const H5::H5File& file, const std::string& datasetName)
+    -> std::vector<int>;
 
-auto GetDistanceL2Sq(const rox::Vector& a, const rox::Vector& b) -> rox::Float;
+auto ReadFloatDataset(const H5::H5File& file, const std::string& datasetName)
+    -> std::vector<float>;
 
-auto AssignCentroid(const rox::Vector& v,
-                    const std::vector<rox::Vector>& centroids, size_t dim)
-    -> size_t;
+auto ReadDataset(const H5::H5File& file) -> Dataset;
 
-auto GetRecallAtK(size_t k, const std::vector<rox::QueryResult>& results,
-                  const std::vector<rox::QueryResult>& gt) -> rox::Float;
-
-auto PrintClusterDistribution(const std::vector<rox::Vector>& vectors,
-                              const std::vector<rox::Vector>& centroids,
-                              size_t n_centroids) -> void;
-
-auto CompareResults(const rox::DB& db,
-                    const std::vector<rox::QueryResult>& results,
-                    const std::vector<rox::QueryResult>& gt) -> void;
+auto PrintDatasetSummary(const Dataset& dataset) -> void;

@@ -19,9 +19,12 @@ if (BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
+find_package(HDF5 REQUIRED COMPONENTS CXX)
+include_directories(${HDF5_INCLUDE_DIRS})
+
 option(BUILD_BENCH "Build benchmarks" ON)
 if (BUILD_BENCH)
-    add_subdirectory(benchmarks/sift)
+    add_subdirectory(benchmarks/image_features)
 endif()
 
 option(USE_BUNDLED_ROCKSDB "Use bundled RocksDB" ON)
@@ -56,7 +59,7 @@ if(USE_BUNDLED_FAISS)
     set(FAISS_ENABLE_GPU OFF CACHE BOOL "build with GPU support")
     set(FAISS_ENABLE_PYTHON OFF CACHE BOOL "build python bindings")
     set(BUILD_TESTING OFF CACHE BOOL "build tests")
-    set(FAISS_OPT_LEVEL generic CACHE STRING "FAISS optimization level")
+    set(FAISS_OPT_LEVEL avx512 CACHE STRING "FAISS optimization level")
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/faiss EXCLUDE_FROM_ALL)
     add_library(FAISS::faiss ALIAS faiss)
 else()
@@ -84,6 +87,12 @@ endif()
 option(USE_AVX512 "Use AVX512 SIMD" ON)
 if (USE_AVX512)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__AVX512F__ -mavx512f")
+endif()
+
+option(USE_OPENMP "Use OpenMP" ON)
+if (USE_OPENMP)
+    find_package(OpenMP REQUIRED)  
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -DUSE_OPENMP")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wall -Wextra -Wpedantic")
@@ -115,3 +124,7 @@ target_link_libraries(${PROJECT_NAME}
         RocksDB::rocksdb
         FlatBuffers::flatbuffers
 )
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
+endif()

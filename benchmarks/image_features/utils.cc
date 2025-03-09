@@ -4,54 +4,11 @@
 #include <faiss/IndexFlat.h>
 
 #include <cassert>
-#include <fstream>
 #include <iostream>
 #include <unordered_set>
 
 using rox::Float;
 using rox::Vector;
-
-auto LoadFvecs(const std::string& path, int num_vectors)
-    -> std::vector<rox::Vector> {
-  std::vector<Vector> vectors;
-  std::ifstream file(path, std::ios::binary);
-
-  if (!file.is_open()) {
-    std::cerr << "Error: Cannot open file " << path << std::endl;
-    return vectors;
-  }
-
-  for (int i = 0; i < num_vectors; ++i) {
-    int dimension;
-    file.read(reinterpret_cast<char*>(&dimension), sizeof(int));
-    if (file.eof()) {
-      break;
-    }
-    if (dimension != 128) {
-      std::cerr << "Warning: Expected 128-dimensional SIFT vector, got "
-                << dimension << std::endl;
-    }
-
-    std::vector<float> vector(dimension);
-    file.read(reinterpret_cast<char*>(vector.data()),
-              dimension * sizeof(float));
-    // If reading failed and we're not at EOF, there was a problem
-    if (file.fail() && !file.eof()) {
-      std::cerr << "Error: Failed to read vector data" << std::endl;
-      break;
-    }
-
-    vectors.push_back(std::move(vector));
-    if (vectors.size() % 100000 == 0) {
-      std::cout << "Loaded " << vectors.size() << " vectors..." << std::endl;
-    }
-  }
-
-  file.close();
-  std::cout << "Successfully loaded " << vectors.size() << " vectors"
-            << std::endl;
-  return vectors;
-}
 
 auto FindCentroids(const std::vector<Vector>& vectors, size_t num_centroids)
     -> std::vector<Vector> {

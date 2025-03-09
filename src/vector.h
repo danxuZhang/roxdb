@@ -22,16 +22,14 @@ inline auto AssignCentroid(const Vector &v,
                            const size_t dim) noexcept -> CentroidId {
   assert(!centroids.empty());
   assert(v.size() == dim);
-  CentroidId best_cluster = 0;
-  Float best_distance = GetDistanceL2Sq(v, centroids[0]);
-  for (CentroidId cluster = 1; cluster < centroids.size(); ++cluster) {
-    const Float distance = GetDistanceL2Sq(v, centroids[cluster]);
-    if (distance < best_distance) {
-      best_cluster = cluster;
-      best_distance = distance;
-    }
+  std::vector<Float> distances(centroids.size());
+
+#pragma omp parallel for
+  for (size_t i = 0; i < centroids.size(); ++i) {
+    distances[i] = GetDistanceL2Sq(v, centroids[i]);
   }
-  return best_cluster;
+
+  return std::distance(distances.begin(), std::ranges::min_element(distances));
 }
 
 class IvfFlatIndex {
