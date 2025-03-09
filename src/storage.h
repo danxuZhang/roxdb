@@ -4,12 +4,57 @@
 #include <rocksdb/options.h>
 
 #include <memory>
+#include <unordered_map>
 
 #include "rocksdb/slice.h"
 #include "roxdb/db.h"
 #include "vector.h"
 
 namespace rox {
+
+class RdbStorage;
+
+class Storage {
+ public:
+  explicit Storage(std::string_view path, const DbOptions& options);
+
+  // Pass-through to RdbStorage
+  auto PutSchema(const Schema& schema) -> void;
+  // Pass-through to RdbStorage
+  auto GetSchema() const -> Schema;
+
+  // Cached in-memory
+  auto PutRecord(Key key, const Record& record) -> void;
+  // Cached in-memory
+  auto GetRecord(Key key) -> Record;
+  // Write-through
+  auto DeleteRecord(Key key) -> void;
+
+  // Cache records in memory
+  auto PrefetchRecords(size_t n) -> void;
+  // Flush cached records to RdbStorage
+  auto FlushRecords() -> void;
+
+  // Pass-through to RdbStorage
+  auto PutIndex(const std::string& field, const IvfFlatIndex& index) -> void;
+  // Pass-through to RdbStorage
+  auto GetIndex(const std::string& field) -> std::unique_ptr<IvfFlatIndex>;
+  // Pass-through to RdbStorage
+  auto DeleteIndex(const std::string& field) -> void;
+
+  // Pass-through to RdbStorage
+  auto GetIterator(std::string_view prefix)
+      -> std::unique_ptr<rocksdb::Iterator>;
+
+  auto GetCacheHit() const noexcept -> size_t { return cache_hit_; }
+  auto GetCacheMiss() const noexcept -> size_t { return cache_miss_; }
+
+ private:
+  size_t cache_hit_ = 0;
+  size_t cache_miss_ = 0;
+  std::unordered_map<Key, Record> records_cache_;
+  std::unique_ptr<RdbStorage> rdb_storage_;
+};
 
 class RdbStorage {
  public:

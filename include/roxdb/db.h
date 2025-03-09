@@ -12,7 +12,6 @@ namespace rox {
 
 struct DbOptions {
   bool create_if_missing = true;
-  size_t ivf_nprobe = 1;
 };  // struct DbOptions
 
 using Key = uint64_t;
@@ -123,7 +122,8 @@ class DB {
                     const std::vector<Vector> &centroids) -> void;
 
   auto FullScan(const Query &query) const -> std::vector<QueryResult>;
-  auto KnnSearch(const Query &query) const -> std::vector<QueryResult>;
+  auto KnnSearch(const Query &query, size_t nprobe = 1) const
+      -> std::vector<QueryResult>;
 
  private:
   std::unique_ptr<DbImpl> impl_;

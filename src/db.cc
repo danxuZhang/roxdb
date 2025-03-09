@@ -150,8 +150,8 @@ auto DB::FullScan(const Query &query) const -> std::vector<QueryResult> {
   return impl_->FullScan(query);
 }
 
-auto DB::KnnSearch(const Query &query) const -> std::vector<QueryResult> {
-  return impl_->KnnSearch(query);
+auto DB::KnnSearch(const Query &query, size_t nprobe) const -> std::vector<QueryResult> {
+  return impl_->KnnSearch(query, nprobe);
 }
 
 }  // namespace rox

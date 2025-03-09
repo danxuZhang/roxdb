@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <iostream>
 #include <memory>
 #include <queue>
 #include <ranges>
@@ -21,7 +23,7 @@ DbImpl::DbImpl(const std::string &path, const DbOptions &options)
     throw std::invalid_argument(
         "Can only open existing database without Schema");
   }
-  storage_ = std::make_unique<RdbStorage>(path, options);
+  storage_ = std::make_unique<Storage>(path, options);
 
   // Load schema
   schema_ = storage_->GetSchema();
@@ -42,6 +44,8 @@ DbImpl::DbImpl(const std::string &path, const DbOptions &options)
   for (size_t i = 0; i < schema_.scalar_fields.size(); ++i) {
     schema_.scalar_field_idx[schema_.scalar_fields[i].name] = i;
   }
+  // Preload records
+  storage_->PrefetchRecords(1000);
 }
 
 DbImpl::DbImpl(const std::string &path, const DbOptions &options,
@@ -53,7 +57,7 @@ DbImpl::DbImpl(const std::string &path, const DbOptions &options,
                                                           field.num_centroids);
   }
   // Create Storage
-  storage_ = std::make_unique<RdbStorage>(path, options);
+  storage_ = std::make_unique<Storage>(path, options);
   storage_->PutSchema(schema_);
 }
 
@@ -62,6 +66,11 @@ DbImpl::~DbImpl() {
   for (const auto &[field, index] : indexes_) {
     storage_->PutIndex(field, *index);
   }
+  // Save records
+  storage_->FlushRecords();
+
+  std::cout << "Cache hit: " << storage_->GetCacheHit() << std::endl;
+  std::cout << "Cache miss: " << storage_->GetCacheMiss() << std::endl;
 }
 
 auto DbImpl::PutRecord(Key key, const Record &record) -> void {
@@ -177,20 +186,21 @@ auto DbImpl::FullScan(const Query &query) const -> std::vector<QueryResult> {
   return results;
 }
 
-auto DbImpl::KnnSearch(const Query &query) const -> std::vector<QueryResult> {
+auto DbImpl::KnnSearch(const Query &query, size_t nprobe) const
+    -> std::vector<QueryResult> {
   if (query.GetLimit() == 0) {
     return {};
   }
 
   // Short curcuit for single vector search
   if (query.vectors.size() == 1) {
-    return SingleVectorKnnSearch(query);
+    return SingleVectorKnnSearch(query, nprobe);
   }
 
-  return MultiVectorKnnSearch(query);
+  return MultiVectorKnnSearch(query, nprobe);
 }
 
-auto DbImpl::SingleVectorKnnSearch(const Query &query) const
+auto DbImpl::SingleVectorKnnSearch(const Query &query, size_t nprobe) const
     -> std::vector<QueryResult> {
   const auto k = query.GetLimit();
   const auto &[field_name, query_vec, weight] = query.GetVectors().front();
@@ -198,7 +208,7 @@ auto DbImpl::SingleVectorKnnSearch(const Query &query) const
 
   // Create a Max Heap for top k results
   std::priority_queue<QueryResult> pq;
-  auto it = IvfFlatIterator(index, query_vec, options_.ivf_nprobe);
+  auto it = IvfFlatIterator(index, query_vec, nprobe, 0, 0);
 
   // Iterate over the index
   for (it.Seek(); it.Valid(); it.Next()) {
@@ -207,11 +217,13 @@ auto DbImpl::SingleVectorKnnSearch(const Query &query) const
     const auto distance = GetDistanceL2Sq(query_vec, record_vec);
 
     // Check filters
-    const auto &record = storage_->GetRecord(key);
-    if (!std::ranges::all_of(query.GetFilters(), [&](const auto &filter) {
-          return ApplyFilter(schema_, record, filter);
-        })) {
-      continue;
+    if (query.GetFilters().size() > 0) {
+      const auto &record = storage_->GetRecord(key);
+      if (!std::ranges::all_of(query.GetFilters(), [&](const auto &filter) {
+            return ApplyFilter(schema_, record, filter);
+          })) {
+        continue;
+      }
     }
 
     // Try to insert into the heap
@@ -234,7 +246,7 @@ auto DbImpl::SingleVectorKnnSearch(const Query &query) const
   return results;
 }
 
-auto DbImpl::MultiVectorKnnSearch(const Query &query) const
+auto DbImpl::MultiVectorKnnSearch(const Query &query, size_t nprobe) const
     -> std::vector<QueryResult> {
   const auto k = query.GetLimit();
   const auto &query_vectors = query.GetVectors();
@@ -243,8 +255,7 @@ auto DbImpl::MultiVectorKnnSearch(const Query &query) const
   std::vector<Iter> its;
   for (const auto &[field_name, query_vec, weight] : query_vectors) {
     const auto &index = *indexes_.at(field_name);
-    auto it = std::make_unique<IvfFlatIterator>(index, query_vec,
-                                                options_.ivf_nprobe);
+    auto it = std::make_unique<IvfFlatIterator>(index, query_vec, nprobe, 0, 0);
     it->Seek();
     its.push_back({field_name, query_vec, weight, std::move(it)});
   }

@@ -71,7 +71,6 @@ int main(int argc, char* argv[]) {
   const bool evaluate = argc == 4;
   rox::DbOptions options;
   options.create_if_missing = false;
-  options.ivf_nprobe = 32;
   rox::DB db(db_path, options);
 
   PrintHdf5FileInfo(dataset_path);
@@ -90,7 +89,7 @@ int main(int argc, char* argv[]) {
       std::cout << "Query " << j + 1 << std::endl;
       const auto& query = queries[j];
       auto start = std::chrono::high_resolution_clock::now();
-      auto results = db.KnnSearch(query);
+      auto results = db.KnnSearch(query, 24);
       auto end = std::chrono::high_resolution_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start);

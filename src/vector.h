@@ -87,8 +87,9 @@ class IvfFlatIndex {
 
 class IvfFlatIterator {
  public:
-  IvfFlatIterator(const IvfFlatIndex &index, const Vector &query,
-                  const size_t nprobe)
+  IvfFlatIterator(const IvfFlatIndex &index, const Vector &query, size_t nprobe,
+                  size_t rm_window_size [[maybe_unused]],
+                  size_t rm_neighbor_size [[maybe_unused]])
       : index_(index), query_(query), nprobe_((nprobe)) {}
 
   auto Seek() -> void;

@@ -2,6 +2,8 @@
 
 #include <limits>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include "roxdb/db.h"
 #include "storage.h"
@@ -26,17 +28,19 @@ class DbImpl {
                     const std::vector<Vector> &centroids) -> void;
 
   auto FullScan(const Query &query) const -> std::vector<QueryResult>;
-  auto KnnSearch(const Query &query) const -> std::vector<QueryResult>;
+  auto KnnSearch(const Query &query, size_t nprobe) const
+      -> std::vector<QueryResult>;
 
  private:
   const std::string &path_;
   const DbOptions &options_;
   Schema schema_;
   // std::unordered_map<Key, Record> records_;  // in-memory storage
-  std::unique_ptr<RdbStorage> storage_;
+  std::unique_ptr<Storage> storage_;
   std::unordered_map<std::string, std::unique_ptr<IvfFlatIndex>> indexes_;
+  std::unordered_map<std::string, size_t> index_avg_size_;
 
-  auto SingleVectorKnnSearch(const Query &query) const
+  auto SingleVectorKnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
 
   struct Iter {
@@ -46,7 +50,7 @@ class DbImpl {
     std::unique_ptr<IvfFlatIterator> it;
     Float last_seen_distance = std::numeric_limits<Float>::max();
   };  // Iterator for Faign's Threshold Algorithm
-  auto MultiVectorKnnSearch(const Query &query) const
+  auto MultiVectorKnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
 };  // class DbImpl
 

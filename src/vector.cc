@@ -18,12 +18,12 @@ auto IvfFlatIterator::Seek() -> void {
 
   // Find cloest nprobe_ centroids
   std::vector<std::pair<Float, CentroidId>> distances(index_.centroids_.size());
-  #pragma omp parallel for 
-  for (size_t i = 0; i < index_.centroids_.size(); ++i) {
-    const auto& centroid = index_.centroids_[i];
-    const auto distance = GetDistanceL2Sq(centroid, query_);
-    distances[i] = {distance, i};
-  }
+  std::ranges::transform(
+      index_.centroids_, distances.begin(), [&](const auto& centroid) {
+        return std::make_pair(GetDistanceL2Sq(centroid, query_),
+                              &centroid - index_.centroids_.data());
+      });
+
   auto comp = [](const auto& a, const auto& b) { return a.first < b.first; };
   std::partial_sort(distances.begin(), distances.begin() + nprobe_,
                     distances.end(), comp);

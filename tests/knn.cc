@@ -67,7 +67,6 @@ TEST(KNN, SingleVectorWFilter) {
   schema.AddScalarField("idx", rox::ScalarField::Type::kInt);
 
   rox::DbOptions options;
-  options.ivf_nprobe = 3;
   rox::DB db("/tmp/roxdb", options, schema);
 
   const rox::Vector c0 = {0, 0};
@@ -95,7 +94,7 @@ TEST(KNN, SingleVectorWFilter) {
   q1.AddVector("vec", v1);
   q1.AddScalarFilter("idx", rox::ScalarFilter::Op::kEq, 0);
   q1.WithLimit(2);
-  auto results = db.KnnSearch(q1);
+  auto results = db.KnnSearch(q1, 3);
   auto gt = db.FullScan(q1);
   EXPECT_EQ(results.size(), 2);
   EXPECT_EQ(results[0].id, gt[0].id);
@@ -107,7 +106,7 @@ TEST(KNN, SingleVectorWFilter) {
   q2.AddVector("vec", v2);
   q2.AddScalarFilter("idx", rox::ScalarFilter::Op::kEq, 1);
   q2.WithLimit(2);
-  results = db.KnnSearch(q2);
+  results = db.KnnSearch(q2, 3);
   gt = db.FullScan(q2);
   EXPECT_EQ(results.size(), 2);
   EXPECT_EQ(results[0].id, gt[0].id);

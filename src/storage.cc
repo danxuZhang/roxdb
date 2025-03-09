@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "flatbuffers/flatbuffer_builder.h"
 #include "flatbuffers_generated.h"
@@ -10,6 +11,75 @@
 #include "vector.h"
 
 namespace rox {
+
+Storage::Storage(std::string_view path, const DbOptions& options)
+    : rdb_storage_(std::make_unique<RdbStorage>(path, options)) {}
+
+auto Storage::PutSchema(const Schema& schema) -> void {
+  rdb_storage_->PutSchema(schema);
+}
+
+auto Storage::GetSchema() const -> Schema { return rdb_storage_->GetSchema(); }
+
+auto Storage::PutRecord(Key key, const Record& record) -> void {
+  records_cache_[key] = record;
+}
+
+auto Storage::GetRecord(Key key) -> Record {
+  auto it = records_cache_.find(key);
+  if (it != records_cache_.end()) {
+    cache_hit_++;
+    return it->second;
+  }
+  cache_miss_++;
+  return rdb_storage_->GetRecord(key);
+}
+
+auto Storage::DeleteRecord(Key key) -> void {
+  records_cache_.erase(key);
+  rdb_storage_->DeleteRecord(key);
+}
+
+auto Storage::PrefetchRecords(size_t n [[maybe_unused]]) -> void {
+  auto it = rdb_storage_->GetIterator(RdbStorage::kRecordPrefix);
+
+  for (; it->Valid(); it->Next()) {
+    std::string_view key_view(it->key().data(), it->key().size());
+    if (!key_view.starts_with(RdbStorage::kRecordPrefix)) {
+      break;
+    }
+    Key key = rox::RdbStorage::GetKey(it->key());
+    if (records_cache_.find(key) == records_cache_.end()) {
+      records_cache_[key] = rdb_storage_->GetRecord(key);
+    }
+  }
+}
+
+auto Storage::FlushRecords() -> void {
+  for (const auto& [key, record] : records_cache_) {
+    rdb_storage_->PutRecord(key, record);
+  }
+  records_cache_.clear();
+}
+
+auto Storage::PutIndex(const std::string& field, const IvfFlatIndex& index)
+    -> void {
+  rdb_storage_->PutIndex(field, index);
+}
+
+auto Storage::GetIndex(const std::string& field)
+    -> std::unique_ptr<IvfFlatIndex> {
+  return rdb_storage_->GetIndex(field);
+}
+
+auto Storage::DeleteIndex(const std::string& field) -> void {
+  rdb_storage_->DeleteIndex(field);
+}
+
+auto Storage::GetIterator(std::string_view prefix)
+    -> std::unique_ptr<rocksdb::Iterator> {
+  return rdb_storage_->GetIterator(prefix);
+}
 
 RdbStorage::RdbStorage(std::string_view path, const DbOptions& options)
     : options_(options) {
@@ -255,7 +325,7 @@ auto RdbStorage::GetRecord(Key key) const -> Record {
         result.vectors.push_back(std::move(vector));
       }
     }  // if (fb_vectors)
-  }    // if (fb_scalars)
+  }  // if (fb_scalars)
   return result;
 }
 

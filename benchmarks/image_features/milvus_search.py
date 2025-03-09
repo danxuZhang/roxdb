@@ -45,7 +45,7 @@ def run_search_query(
 ):
     """Execute a single search query on the collection"""
     if search_params is None:
-        search_params = {"metric_type": "L2", "params": {"nprobe": 32}}
+        search_params = {"metric_type": "L2"}
 
     if filter_params:
         results = collection.search(
