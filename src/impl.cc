@@ -70,7 +70,9 @@ DbImpl::DbImpl(const std::string &path, const DbOptions &options,
 DbImpl::~DbImpl() {
   // Save indexes
   for (const auto &[field, index] : indexes_) {
-    storage_->PutIndex(field, *index);
+    if (dirty_indexes_.contains(field)) {
+      storage_->PutIndex(field, *index);
+    }
   }
   // Save records
   storage_->FlushRecords();
@@ -87,6 +89,7 @@ auto DbImpl::PutRecord(Key key, const Record &record) -> void {
     const auto &vector =
         record.vectors[schema_.vector_field_idx.at(field.name)];
     indexes_.at(field.name)->Put(key, vector);
+    dirty_indexes_.insert(field.name);
   }
 }
 
@@ -110,6 +113,7 @@ auto DbImpl::SetCentroids(const std::string &field,
   }
 
   indexes_.at(field)->SetCentroids(centroids);
+  dirty_indexes_.insert(field);
 }
 
 auto DbImpl::FlushRecords() -> void { storage_->FlushRecords(); }

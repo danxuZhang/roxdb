@@ -24,6 +24,7 @@ auto Storage::GetSchema() const -> Schema { return rdb_storage_->GetSchema(); }
 
 auto Storage::PutRecord(Key key, const Record& record) -> void {
   records_cache_[key] = record;
+  dirty_records_.insert(key);
 }
 
 auto Storage::GetRecord(Key key) -> Record {
@@ -57,8 +58,8 @@ auto Storage::PrefetchRecords(size_t n [[maybe_unused]]) -> void {
 }
 
 auto Storage::FlushRecords() -> void {
-  for (const auto& [key, record] : records_cache_) {
-    rdb_storage_->PutRecord(key, record);
+  for (const auto key : dirty_records_) {
+    rdb_storage_->PutRecord(key, records_cache_[key]);
   }
   records_cache_.clear();
 }

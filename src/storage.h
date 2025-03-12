@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "rocksdb/slice.h"
 #include "roxdb/db.h"
@@ -53,6 +54,7 @@ class Storage {
   friend class DbImpl;
   size_t cache_hit_ = 0;
   size_t cache_miss_ = 0;
+  std::unordered_set<Key> dirty_records_;
   std::unordered_map<Key, Record> records_cache_;
   std::unique_ptr<RdbStorage> rdb_storage_;
 };

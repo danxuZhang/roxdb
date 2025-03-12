@@ -40,7 +40,7 @@ class DbImpl {
   // std::unordered_map<Key, Record> records_;  // in-memory storage
   std::unique_ptr<Storage> storage_;
   std::unordered_map<std::string, std::unique_ptr<IvfFlatIndex>> indexes_;
-  std::unordered_map<std::string, size_t> index_avg_size_;
+  std::unordered_set<std::string> dirty_indexes_;
 
   auto SingleVectorKnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
