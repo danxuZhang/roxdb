@@ -32,6 +32,7 @@ TEST(KNN, SingleVector) {
     record.vectors.push_back(v);
     db.PutRecord(i, record);
   }
+  db.FlushRecords();
 
   // Find 3 cloest vectors to (0, 0)
   rox::Query q1;

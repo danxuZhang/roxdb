@@ -11,6 +11,10 @@ add_executable(
 )
 
 target_link_libraries(roxdb_search PRIVATE ${PROJECT_NAME} FAISS::faiss ${HDF5_LIBRARIES}) 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(roxdb_search PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_options(roxdb_search PRIVATE -DWITH_OPENMP -fmarch=native -O3 -fopenmp)
+endif()
 
 add_executable(
     roxdb_add_search

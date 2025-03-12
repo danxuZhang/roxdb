@@ -50,6 +50,7 @@ class Storage {
   auto GetCacheMiss() const noexcept -> size_t { return cache_miss_; }
 
  private:
+  friend class DbImpl;
   size_t cache_hit_ = 0;
   size_t cache_miss_ = 0;
   std::unordered_map<Key, Record> records_cache_;
@@ -92,6 +93,8 @@ class RdbStorage {
   static constexpr const char* kCentroidPrefix = "c:";
 
  private:
+  auto PutIndexPartition(const std::string& field, const IvfFlatIndex& index,
+                         size_t idx, size_t offset, size_t size) -> void;
   std::unique_ptr<rocksdb::DB> db_;
   const DbOptions& options_;
 };

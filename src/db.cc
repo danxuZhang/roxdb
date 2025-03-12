@@ -105,7 +105,6 @@ auto Query::GetFilters() const noexcept -> std::vector<ScalarFilter> {
 
 auto Query::GetLimit() const noexcept -> size_t { return limit; }
 
-
 DB::DB(const std::string &path, const DbOptions &options)
     : impl_(std::make_unique<DbImpl>(path, options)) {}
 
@@ -131,8 +130,10 @@ auto DB::FullScan(const Query &query) const -> std::vector<QueryResult> {
   return impl_->FullScan(query);
 }
 
-auto DB::KnnSearch(const Query &query, size_t nprobe) const -> std::vector<QueryResult> {
+auto DB::KnnSearch(const Query &query, size_t nprobe) const
+    -> std::vector<QueryResult> {
   return impl_->KnnSearch(query, nprobe);
 }
 
+auto DB::FlushRecords() -> void { impl_->FlushRecords(); }
 }  // namespace rox

@@ -1,5 +1,6 @@
 #include "storage.h"
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -339,7 +340,36 @@ auto RdbStorage::DeleteRecord(Key key) -> void {
 
 auto RdbStorage::PutIndex(const std::string& field, const IvfFlatIndex& index)
     -> void {
+  constexpr const static size_t kBaseDim = 128;
+  constexpr const static size_t kCentroidPerPartition = 1000;
+  size_t num_centroids = index.GetCentroids().size();
+  assert(num_centroids == index.GetInvertedLists().size());
+  size_t dim = index.dim_;
+  size_t normalized_num_centroids =
+      num_centroids * (dim / kBaseDim);  // punish long vectors
+  size_t n_partitions = normalized_num_centroids / kCentroidPerPartition;
+  if (normalized_num_centroids % kCentroidPerPartition != 0) {
+    n_partitions++;
+  }
+
+  size_t partition_size = num_centroids / n_partitions;
+  size_t partition_remainder = num_centroids % n_partitions;
+
+  for (size_t i = 0; i < n_partitions; i++) {
+    size_t offset = i * partition_size;
+    size_t size = partition_size;
+    if (i == n_partitions - 1) {
+      size += partition_remainder;
+    }
+    PutIndexPartition(field, index, i, offset, size);
+  }
+}
+
+auto RdbStorage::PutIndexPartition(const std::string& field,
+                                   const IvfFlatIndex& index, size_t idx,
+                                   size_t offset, size_t size) -> void {
   std::string index_key = MakeIndexKey(field);
+  index_key += ":" + std::to_string(idx);
   flatbuffers::FlatBufferBuilder builder;
 
   // Create field name
@@ -347,7 +377,10 @@ auto RdbStorage::PutIndex(const std::string& field, const IvfFlatIndex& index)
 
   // Create centroids
   std::vector<flatbuffers::Offset<rox::fb::Vector>> centroids;
-  for (const auto& centroid : index.GetCentroids()) {
+  centroids.reserve(size);
+  // for (const auto& centroid : index.GetCentroids()) {
+  for (size_t i = offset; i < offset + size; i++) {
+    const auto& centroid = index.GetCentroids()[i];
     auto values = builder.CreateVector(centroid);
     auto vector_fb = rox::fb::CreateVector(builder, values);
     centroids.push_back(vector_fb);
@@ -355,7 +388,10 @@ auto RdbStorage::PutIndex(const std::string& field, const IvfFlatIndex& index)
 
   // Create inverted lists
   std::vector<flatbuffers::Offset<rox::fb::IvfList>> inverted_lists;
-  for (const auto& list : index.GetInvertedLists()) {
+  inverted_lists.reserve(size);
+  // for (const auto& list : index.GetInvertedLists()) {
+  for (size_t i = offset; i < offset + size; i++) {
+    const auto& list = index.GetInvertedLists()[i];
     std::vector<flatbuffers::Offset<rox::fb::IvfListEntry>> entries;
 
     for (const auto& [key, vec] : list) {
@@ -392,10 +428,17 @@ auto RdbStorage::PutIndex(const std::string& field, const IvfFlatIndex& index)
 
 auto RdbStorage::GetIndex(const std::string& field)
     -> std::unique_ptr<IvfFlatIndex> {
-  std::string index_key = MakeIndexKey(field);
+  std::string index_key_base = MakeIndexKey(field);
   std::string value;
   rocksdb::ReadOptions read_options;
-  auto status = db_->Get(read_options, index_key, &value);
+  std::unique_ptr<rocksdb::Iterator> it(db_->NewIterator(read_options));
+  it->Seek(index_key_base + ":");
+  if (!it->Valid() || !it->key().starts_with(index_key_base + ":")) {
+    return nullptr;  // No index found
+  }
+
+  // Retrieve metadata from partition 0
+  auto status = db_->Get(read_options, index_key_base + ":0", &value);
   if (!status.ok()) {
     throw std::runtime_error("Failed to get index: " + status.ToString());
   }
@@ -411,43 +454,60 @@ auto RdbStorage::GetIndex(const std::string& field)
   std::unique_ptr<IvfFlatIndex> index =
       std::make_unique<IvfFlatIndex>(field_name, dim, nlist);
 
-  // Extract centroids
   std::vector<Vector> centroids;
-  if (fb_index->centroids()) {
-    for (const auto* centroid : *fb_index->centroids()) {
-      Vector vec;
-      if (centroid->values()) {
-        vec.reserve(centroid->values()->size());
-        for (float val : *centroid->values()) {
-          vec.push_back(val);
-        }
-      }
-      centroids.push_back(std::move(vec));
-    }
-  }
-  index->SetCentroids(centroids);
-
-  // Extract inverted lists
   std::vector<IvfList> inverted_lists;
-  if (fb_index->inverted_lists()) {
-    for (const auto* list : *fb_index->inverted_lists()) {
-      IvfList ivf_list;
-      if (list->entries()) {
-        for (const auto* entry : *list->entries()) {
-          Key key = entry->key();
-          Vector vec;
-          if (entry->vector() && entry->vector()->values()) {
-            vec.reserve(entry->vector()->values()->size());
-            for (float val : *entry->vector()->values()) {
-              vec.push_back(val);
-            }
-          }
-          ivf_list.emplace_back(key, std::move(vec));
-        }
-      }
-      inverted_lists.push_back(std::move(ivf_list));
+
+  // Merge other partitions
+  while (it->Valid() && it->key().starts_with(index_key_base + ":")) {
+    auto value = it->value();
+    const auto* fb_index =
+        flatbuffers::GetRoot<rox::fb::IvfFlatIndex>(value.data());
+
+    // check metadata
+    if (fb_index->field_name()->str() != field_name || fb_index->dim() != dim ||
+        fb_index->nlist() != nlist) {
+      throw std::runtime_error("Inconsistent index metadata");
     }
+
+    // Extract centroids
+    if (fb_index->centroids()) {
+      for (const auto* centroid : *fb_index->centroids()) {
+        Vector vec;
+        if (centroid->values()) {
+          vec.reserve(centroid->values()->size());
+          for (float val : *centroid->values()) {
+            vec.push_back(val);
+          }
+        }
+        centroids.push_back(std::move(vec));
+      }
+    }
+
+    // Extract inverted lists
+    if (fb_index->inverted_lists()) {
+      for (const auto* list : *fb_index->inverted_lists()) {
+        IvfList ivf_list;
+        if (list->entries()) {
+          for (const auto* entry : *list->entries()) {
+            Key key = entry->key();
+            Vector vec;
+            if (entry->vector() && entry->vector()->values()) {
+              vec.reserve(entry->vector()->values()->size());
+              for (float val : *entry->vector()->values()) {
+                vec.push_back(val);
+              }
+            }
+            ivf_list.emplace_back(key, std::move(vec));
+          }
+        }
+        inverted_lists.push_back(std::move(ivf_list));
+      }
+    }
+
+    it->Next();
   }
+
+  index->SetCentroids(centroids);
   index->SetInvertedLists(inverted_lists);
 
   return index;

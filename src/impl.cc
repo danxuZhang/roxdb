@@ -112,6 +112,8 @@ auto DbImpl::SetCentroids(const std::string &field,
   indexes_.at(field)->SetCentroids(centroids);
 }
 
+auto DbImpl::FlushRecords() -> void { storage_->FlushRecords(); }
+
 auto DbImpl::FullScan(const Query &query) const -> std::vector<QueryResult> {
   if (query.GetLimit() == 0) {
     return {};

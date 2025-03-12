@@ -66,11 +66,11 @@ inline auto GetDistanceL2Sq(const Vector &a, const Vector &b) -> Float {
 #endif
 }
 
-#ifdef __AVX512F__
-inline auto GetDistanceL1Avx512F(const Vector &a, const Vector &b) -> Float {
-  return 0.0;
-}
-#endif
+// #ifdef __AVX512F__
+// inline auto GetDistanceL1Avx512F(const Vector &a, const Vector &b) -> Float {
+//   return 0.0;
+// }
+// #endif
 
 inline auto GetDistanceL1(const Vector &a, const Vector &b) noexcept -> Float {
   assert(a.size() == b.size());

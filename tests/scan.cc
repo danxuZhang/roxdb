@@ -31,6 +31,8 @@ TEST(Scan, SingleVectorScan) {
     db.PutRecord(i, record);
   }
 
+  db.FlushRecords();
+
   // Find 3 cloest vectors to (9, 27, 45)
   rox::Query query;
   rox::Vector v = {9.0, 27.0, 45.0};
@@ -74,6 +76,7 @@ TEST(Scan, SingleVectorScanWithWeight) {
     record.vectors.push_back(v);
     db.PutRecord(i, record);
   }
+  db.FlushRecords();
 
   // Find 3 cloest vectors to (9, 27, 45)
   rox::Query query;
@@ -132,6 +135,7 @@ TEST(Scan, MultiVectorScan) {
     db.PutRecord(i, record);
     records.push_back(record);
   }
+  db.FlushRecords();
 
   auto results = db.FullScan(query);
   EXPECT_EQ(results.size(), 3);

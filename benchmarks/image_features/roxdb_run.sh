@@ -7,7 +7,7 @@ BUILD_PATH="./benchmarks/image_features"
 ADD="${BUILD_PATH}/roxdb_add"
 SEARCH="${BUILD_PATH}/roxdb_search"
 
-BASE_VEC=$HOME/image_features/image_features_100k.h5
+BASE_VEC=$HOME/image_features/image_features_1M.h5
 QUERY_VEC=$HOME/image_features/image_features_query_1k.h5
 
 # export OMP_NUM_THREADS=16
@@ -15,6 +15,6 @@ QUERY_VEC=$HOME/image_features/image_features_query_1k.h5
 # echo "Adding to database"
 # $ADD $DB_PATH $BASE_VEC
 
-export OMP_NUM_THREADS=32
+export OMP_NUM_THREADS=64
 echo "Searching"
-$SEARCH $DB_PATH $QUERY_VEC  --evaluate
+$SEARCH $DB_PATH $QUERY_VEC  

@@ -7,6 +7,10 @@
 #include "roxdb/db.h"
 #include "utils.h"
 
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
+
 constexpr const size_t kIters = 10;
 
 namespace {
@@ -65,6 +69,11 @@ int main(int argc, char* argv[]) {
     std::cerr << kUsage << std::endl;
     return 1;
   }
+
+#ifdef USE_OPENMP
+  std::cout << "OpenMP enabled" << std::endl;
+  std::cout << "Number of threads: " << omp_get_max_threads() << std::endl;
+#endif
 
   const std::string db_path = argv[1];
   const std::string dataset_path = argv[2];

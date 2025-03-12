@@ -134,6 +134,7 @@ class DB {
   auto PutRecord(Key key, const Record &record) -> void;
   auto GetRecord(Key key) const -> Record;
   auto DeleteRecord(Key key) -> void;
+  auto FlushRecords() -> void;
 
   auto SetCentroids(const std::string &field,
                     const std::vector<Vector> &centroids) -> void;
