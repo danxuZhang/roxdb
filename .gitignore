@@ -6,7 +6,9 @@
 
 compile_commands.json
 
+.env
 build/
+build-*/
 tags
 
 # Prerequisites

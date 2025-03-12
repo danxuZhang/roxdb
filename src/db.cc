@@ -105,25 +105,6 @@ auto Query::GetFilters() const noexcept -> std::vector<ScalarFilter> {
 
 auto Query::GetLimit() const noexcept -> size_t { return limit; }
 
-auto ApplyFilter(const Schema &schema, const Record &record,
-                 const ScalarFilter &filter) noexcept -> bool {
-  const auto &scalar = record.scalars[schema.scalar_field_idx.at(filter.field)];
-  switch (filter.op) {
-    case ScalarFilter::Op::kEq:
-      return scalar == filter.value;
-    case ScalarFilter::Op::kNe:
-      return scalar != filter.value;
-    case ScalarFilter::Op::kGt:
-      return scalar > filter.value;
-    case ScalarFilter::Op::kGe:
-      return scalar >= filter.value;
-    case ScalarFilter::Op::kLt:
-      return scalar < filter.value;
-    case ScalarFilter::Op::kLe:
-      return scalar <= filter.value;
-  }
-  return false;
-}
 
 DB::DB(const std::string &path, const DbOptions &options)
     : impl_(std::make_unique<DbImpl>(path, options)) {}

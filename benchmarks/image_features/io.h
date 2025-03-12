@@ -73,9 +73,10 @@ class FvecsReader {
       return;
     }
 
-    if (dimension != 128) {
-      throw std::runtime_error("Expected 128-dimensional SIFT vector, got " +
-                               std::to_string(dimension));
+    if (dimension != 128 && dimension != 960) {
+      throw std::runtime_error(
+          "Expected 128-dimensional SIFT or 960-dimensional GIST vector, got " +
+          std::to_string(dimension));
     }
 
     vector_.resize(dimension);

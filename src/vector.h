@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <execution>
 #include <functional>
 #include <queue>
 #include <string>
@@ -24,10 +25,10 @@ inline auto AssignCentroid(const Vector &v,
   assert(v.size() == dim);
   std::vector<Float> distances(centroids.size());
 
-#pragma omp parallel for
-  for (size_t i = 0; i < centroids.size(); ++i) {
-    distances[i] = GetDistanceL2Sq(v, centroids[i]);
-  }
+  std::transform(std::execution::par, centroids.begin(), centroids.end(),
+                 distances.begin(), [&v](const auto &centroid) {
+                   return GetDistanceL2Sq(centroid, v);
+                 });
 
   return std::distance(distances.begin(), std::ranges::min_element(distances));
 }
@@ -101,6 +102,11 @@ class IvfFlatIterator {
   auto GetKey() const noexcept -> Key;
   auto GetVector() const noexcept -> const Vector &;
 
+  auto SeekCluster() -> void;
+  auto NextCluster() -> void;
+  auto GetCluster() -> const IvfList &;
+  auto HasNextCluster() const -> bool;
+
  private:
   struct Candidate {
     Key key;
@@ -116,7 +122,7 @@ class IvfFlatIterator {
   const size_t nprobe_;
 
   std::vector<CentroidId> probe_lists_;  // clusters to probe
-  size_t current_prob_;                  // current probe cluster index
+  size_t current_prob_ = 0;              // current probe cluster index
   std::priority_queue<Candidate, std::vector<Candidate>, std::greater<>>
       candidates_;  // candidates in the current probe cluster (min heap)
 

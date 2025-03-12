@@ -88,8 +88,9 @@ int main(int argc, char* argv[]) {
     for (size_t j = 0; j < n_query; ++j) {
       std::cout << "Query " << j + 1 << std::endl;
       const auto& query = queries[j];
+      size_t nprobe = 24;
       auto start = std::chrono::high_resolution_clock::now();
-      auto results = db.KnnSearch(query, 24);
+      auto results = db.KnnSearch(query, nprobe);
       auto end = std::chrono::high_resolution_clock::now();
       auto duration =
           std::chrono::duration_cast<std::chrono::milliseconds>(end - start);

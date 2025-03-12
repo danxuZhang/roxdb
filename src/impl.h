@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -48,7 +49,13 @@ class DbImpl {
     const Vector &query;
     const Float weight;
     std::unique_ptr<IvfFlatIterator> it;
+    std::unique_ptr<std::mutex> mutex = std::make_unique<std::mutex>();
     Float last_seen_distance = std::numeric_limits<Float>::max();
+
+    // Constructor
+    Iter(const std::string &field, const Vector &query, Float weight,
+         std::unique_ptr<IvfFlatIterator> it)
+        : field(field), query(query), weight(weight), it(std::move(it)) {}
   };  // Iterator for Faign's Threshold Algorithm
   auto MultiVectorKnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;

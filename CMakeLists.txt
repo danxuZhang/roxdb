@@ -90,7 +90,7 @@ if (USE_AVX512)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__AVX512F__ -mavx512f")
 endif()
 
-option(USE_OPENMP "Use OpenMP" OFF)
+option(USE_OPENMP "Use OpenMP" ON)
 if (USE_OPENMP)
     find_package(OpenMP REQUIRED)  
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -DUSE_OPENMP")
@@ -98,7 +98,7 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations -Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -pg")
-set(CMAKE_CXX_FLAGS_RELEASE " -O3 -march=native -flto -mtune=native ")
+set(CMAKE_CXX_FLAGS_RELEASE "-g -O3 -march=native -mtune=native -ffast-math")
 
 include_directories(include)
 file(GLOB_RECURSE SOURCES

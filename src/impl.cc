@@ -3,13 +3,19 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <execution>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <ranges>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
 
 #include "roxdb/db.h"
 #include "storage.h"
@@ -192,10 +198,10 @@ auto DbImpl::KnnSearch(const Query &query, size_t nprobe) const
     return {};
   }
 
-  // Short curcuit for single vector search
-  if (query.vectors.size() == 1) {
-    return SingleVectorKnnSearch(query, nprobe);
-  }
+  // // Short curcuit for single vector search
+  // if (query.vectors.size() == 1) {
+  //   return SingleVectorKnnSearch(query, nprobe);
+  // }
 
   return MultiVectorKnnSearch(query, nprobe);
 }
@@ -256,8 +262,8 @@ auto DbImpl::MultiVectorKnnSearch(const Query &query, size_t nprobe) const
   for (const auto &[field_name, query_vec, weight] : query_vectors) {
     const auto &index = *indexes_.at(field_name);
     auto it = std::make_unique<IvfFlatIterator>(index, query_vec, nprobe, 0, 0);
-    it->Seek();
-    its.push_back({field_name, query_vec, weight, std::move(it)});
+    it->SeekCluster();
+    its.emplace_back(field_name, query_vec, weight, std::move(it));
   }
 
   // Create a Max Heap for top k results
@@ -265,52 +271,71 @@ auto DbImpl::MultiVectorKnnSearch(const Query &query, size_t nprobe) const
   // top() is the largest, pop() removes the largest in the heap
   // New candidate only needs to compare with the largest in the heap (top)
   std::priority_queue<QueryResult> pq;
+  std::mutex pq_mutex;
   std::unordered_set<Key> visited;  // Avoid duplicate keys
+  std::mutex visited_mutex;
 
   while (true) {
     bool exhausted = true;
-    // Iterate over the iterators one round
+    // Iterate over the iterators one round, one cluster at a time
     for (auto &it : its) {
-      if (!it.it->Valid()) {
+      if (!it.it->HasNextCluster()) {
         continue;
       }
       exhausted = false;
 
-      // Get key and update last seen distance
-      const auto key = it.it->GetKey();
-      const auto &vec = it.it->GetVector();
-      const auto distance = GetDistanceL2Sq(it.query, vec);
-      it.last_seen_distance = std::min(distance, it.last_seen_distance);
-      it.it->Next();
+      const auto &cluster = it.it->GetCluster();
+      std::for_each(
+          std::execution::par, cluster.begin(), cluster.end(),
+          [&](const auto &pair) {
+            const auto key = pair.first;
+            const auto &record_vec = pair.second;
+            const auto &distance = GetDistanceL2Sq(it.query, record_vec);
 
-      if (visited.contains(key)) {
-        continue;
-      }
-      visited.insert(key);
+            {  // Skip if key is already visited
+              std::lock_guard<std::mutex> lock(visited_mutex);
+              if (!visited.insert(key).second) {
+                return;
+              }
+            }
 
-      // Get Record and check filters
-      const auto &record = storage_->GetRecord(key);
-      if (!std::ranges::all_of(query.GetFilters(), [&](const auto &filter) {
-            return ApplyFilter(schema_, record, filter);
-          })) {
-        continue;
-      }
+            const auto &record = storage_->GetRecord(key);
 
-      // Calculate aggregate distance
-      Float distance_sum = 0.0;
-      for (const auto &[field_name, query_vec, weight] : query_vectors) {
-        const auto &record_vec =
-            record.vectors[schema_.vector_field_idx.at(field_name)];
-        distance_sum += GetDistanceL2Sq(query_vec, record_vec) * weight;
-      }
+            // Check filters
+            if (query.GetFilters().size() > 0) {
+              if (!std::ranges::all_of(
+                      query.GetFilters(), [&](const auto &filter) {
+                        return ApplyFilter(schema_, record, filter);
+                      })) {
+                return;
+              }
+            }
 
-      // Try to insert into the heap
-      if (pq.size() < k) {
-        pq.push({key, distance_sum});
-      } else if (distance_sum < pq.top().distance) {
-        pq.pop();
-        pq.push({key, distance_sum});
-      }
+            // Calculate total distance
+            Float total_distance = 0.0;
+            for (const auto &[field_name, query_vec, weight] : query_vectors) {
+              const auto &record_vec =
+                  record.vectors[schema_.vector_field_idx.at(field_name)];
+              total_distance += GetDistanceL2Sq(query_vec, record_vec) * weight;
+            }
+
+            // Update last seen distance
+            {
+              std::lock_guard<std::mutex> lock(*it.mutex);
+              it.last_seen_distance = std::min(it.last_seen_distance, distance);
+            }
+
+            // Try to insert into the heap
+            std::lock_guard<std::mutex> lock(pq_mutex);
+            if (pq.size() < k) {
+              pq.push({key, total_distance});
+            } else if (total_distance < pq.top().distance) {
+              pq.pop();
+              pq.push({key, total_distance});
+            }
+          });
+
+      it.it->NextCluster();
     }  // for (auto &it : its)
 
     // Check Threshold Algorithm stopping condition
