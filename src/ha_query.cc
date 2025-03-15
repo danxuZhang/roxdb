@@ -1,12 +1,16 @@
 #include "ha_query.h"
 
+#include <algorithm>
+#include <cmath>
 #include <queue>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "impl.h"
 #include "roxdb/db.h"
+#include "vector.h"
 
 namespace rox {
 
@@ -15,7 +19,7 @@ auto QueryHandler::KnnSearch(size_t nprobe) -> std::vector<QueryResult> {
   const auto &query_vectors = query_.GetVectors();
 
   // Create Iterators for each vector field
-  std::vector<Iterator> its;
+  std::vector<AptIterator> its;
   for (const auto &[field_name, query_vec, weight] : query_vectors) {
     const auto &index = *db_.indexes_.at(field_name);
     auto it = std::make_unique<IvfFlatIterator>(index, query_vec, nprobe, 0, 0);
@@ -228,6 +232,149 @@ auto QueryHandler::KnnSearchIterativeMerge(size_t nprobe, size_t k_threshold)
     // if not met, double k and continue
     k *= 2;
   }  // while (k < k_threshold)
+
+  std::vector<QueryResult> results;
+  results.reserve(pq.size());
+  while (!pq.empty()) {
+    results.push_back(pq.top());
+    pq.pop();
+  }
+  return results;
+}
+
+auto QueryHandler::KnnSearchVBase(size_t nprobe, size_t n2)
+    -> std::vector<QueryResult> {
+  constexpr const size_t kKPerRound = 1;
+  const auto k = query_.GetLimit();
+  const auto &query_vectors = query_.GetVectors();
+
+  // Iterator for each field
+  std::vector<IvfFlatIterator> its;
+  for (const auto &[field_name, query_vec, weight] : query_vectors) {
+    const auto &index = *db_.indexes_.at(field_name);
+    auto it = IvfFlatIterator(index, query_vec, nprobe, 0, 0);
+    it.Seek();
+    its.push_back(std::move(it));
+  }
+
+  // Average score tracking for each field
+  std::unordered_map<std::string, Float> scores_sum;
+  std::unordered_map<std::string, size_t> scores_count;
+  for (const auto &[field_name, query_vec, weight] : query_vectors) {
+    scores_sum[field_name] = 0.0F;
+    scores_count[field_name] = 0;
+  }
+
+  // Threshold Algorithm Setup
+  std::unordered_map<std::string, Float>
+      threshold_values;  // field -> threshold
+  for (const auto &[field_name, query_vec, weight] : query_vectors) {
+    threshold_values[field_name] = std::numeric_limits<Float>::max();
+  }
+
+  std::priority_queue<QueryResult> pq;
+  std::unordered_set<Key> visited;
+  while (true) {
+    // Calculate steps for each field
+    std::unordered_map<std::string, size_t> steps;
+    if (n2 == 0 ||
+        std::ranges::min_element(scores_count, {},
+                                 &std::pair<const std::string, size_t>::second)
+                ->second == 0) {
+      for (const auto &[field_name, query_vec, weight] : query_vectors) {
+        steps[field_name] = kKPerRound;
+      }
+    } else {
+      float avg_score_reciprocal = 0.0F;
+      for (const auto &[field_name, query_vec, weight] : query_vectors) {
+        avg_score_reciprocal +=
+            1.0F / (scores_sum[field_name] / scores_count[field_name]);
+      }
+      for (const auto &[field_name, query_vec, weight] : query_vectors) {
+        steps[field_name] =
+            kKPerRound +
+            std::ceil(n2 * (scores_count[field_name] / scores_sum[field_name]) /
+                      avg_score_reciprocal);
+      }
+    }
+
+    // Run top-k search for each field
+    bool exhausted = true;
+    for (size_t field_i = 0; field_i < query_vectors.size(); ++field_i) {
+      const auto &[field_name, query_vec, weight] = query_vectors[field_i];
+      auto &it = its[field_i];
+      if (!it.Valid()) {
+        continue;
+      }
+      exhausted = false;
+
+      // Calculate the number of steps for this field
+      const auto &step = steps[field_name];
+      for (size_t i = 0; i < step; ++i) {
+        if (!it.Valid()) {
+          break;
+        }
+
+        const auto key = it.GetKey();
+        const auto &record_vec = it.GetVector();
+        const auto distance = GetDistanceL2Sq(query_vec, record_vec);
+        it.Next();
+
+        {  // Skip if key is already visited
+          if (!visited.insert(key).second) {
+            continue;
+          }
+        }
+
+        const auto &record = db_.storage_->GetRecord(key);
+        // Apply filters
+        if (query_.GetFilters().size() > 0) {
+          if (!std::ranges::all_of(
+                  query_.GetFilters(), [&](const auto &filter) {
+                    return ApplyFilter(db_.schema_, record, filter);
+                  })) {
+            continue;
+          }
+        }
+
+        // Calculate total distance
+        Float total_distance = 0.0;
+        for (const auto &[field_name, query_vec, weight] : query_vectors) {
+          const auto &record_vec =
+              record.vectors[db_.schema_.vector_field_idx.at(field_name)];
+          total_distance += GetDistanceL2Sq(query_vec, record_vec) * weight;
+        }
+
+        // Update last seen distance
+        threshold_values[field_name] =
+            std::min(threshold_values[field_name], distance);
+
+        // Update scores
+        scores_sum[field_name] += total_distance;
+        scores_count[field_name] += 1;
+
+        // Try to insert into the heap
+        if (pq.size() < k) {
+          pq.push({key, total_distance});
+        } else if (total_distance < pq.top().distance) {
+          pq.pop();
+          pq.push({key, total_distance});
+        }
+      }  // for step times
+    }  // for field in query_vectors
+    if (exhausted) {
+      break;
+    }
+
+    // Check Threshold Algorithm stopping condition
+    Float distance_sum = 0.0;
+    for (const auto &[field_name, query_vec, weight] : query_vectors) {
+      distance_sum += threshold_values[field_name] * weight;
+    }
+    if (pq.size() == k && distance_sum >= pq.top().distance) {
+      break;
+    }
+  }  // while (true)
 
   std::vector<QueryResult> results;
   results.reserve(pq.size());

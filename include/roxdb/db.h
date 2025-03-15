@@ -147,6 +147,9 @@ class DB {
                                size_t k_threshold) const
       -> std::vector<QueryResult>;
 
+  auto KnnSearchVBase(const Query &query, size_t nprobe, size_t n2)
+      -> std::vector<QueryResult>;
+
  private:
   std::unique_ptr<DbImpl> impl_;
 

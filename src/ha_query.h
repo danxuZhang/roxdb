@@ -13,10 +13,13 @@ class QueryHandler {
 
   auto KnnSearch(size_t nprobe) -> std::vector<QueryResult>;
 
-  auto KnnSearchIterativeMerge(size_t nprobe, size_t k_threshold) -> std::vector<QueryResult>;
+  auto KnnSearchIterativeMerge(size_t nprobe, size_t k_threshold)
+      -> std::vector<QueryResult>;
+
+  auto KnnSearchVBase(size_t nprobe, size_t n2) -> std::vector<QueryResult>;
 
  private:
-  struct Iterator {
+  struct AptIterator {
     const std::string &field;
     const Vector &query;
     const Float weight;
@@ -25,8 +28,8 @@ class QueryHandler {
     Float last_seen_distance = std::numeric_limits<Float>::max();
 
     // Constructor
-    Iterator(const std::string &field, const Vector &query, Float weight,
-             std::unique_ptr<IvfFlatIterator> it)
+    AptIterator(const std::string &field, const Vector &query, Float weight,
+                std::unique_ptr<IvfFlatIterator> it)
         : field(field), query(query), weight(weight), it(std::move(it)) {}
   };
 

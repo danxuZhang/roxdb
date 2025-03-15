@@ -270,4 +270,10 @@ auto DbImpl::KnnSearchIterativeMerge(const Query &query, size_t nprobe,
   return handler.KnnSearchIterativeMerge(nprobe, k_threshold);
 }
 
+auto DbImpl::KnnSearchVBase(const Query &query, size_t nprobe, size_t n2)
+    -> std::vector<QueryResult> {
+  auto handler = QueryHandler(*this, query);
+  return handler.KnnSearchVBase(nprobe, n2);
+}
+
 }  // namespace rox

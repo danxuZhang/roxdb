@@ -142,4 +142,10 @@ auto DB::KnnSearchIterativeMerge(const Query &query, size_t nprobe,
     -> std::vector<QueryResult> {
   return impl_->KnnSearchIterativeMerge(query, nprobe, k_threshold);
 }
+
+auto DB::KnnSearchVBase(const Query &query, size_t nprobe, size_t n2)
+    -> std::vector<QueryResult> {
+  return impl_->KnnSearchVBase(query, nprobe, n2);
+}
+
 }  // namespace rox

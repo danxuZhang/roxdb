@@ -1,8 +1,6 @@
 #pragma once
 
-#include <limits>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -33,7 +31,11 @@ class DbImpl {
   auto KnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
 
-  auto KnnSearchIterativeMerge(const Query &query, size_t nprobe, size_t k_threshold) const
+  auto KnnSearchIterativeMerge(const Query &query, size_t nprobe,
+                               size_t k_threshold) const
+      -> std::vector<QueryResult>;
+
+  auto KnnSearchVBase(const Query &query, size_t nprobe, size_t n2)
       -> std::vector<QueryResult>;
 
  private:
