@@ -34,6 +34,7 @@ class DbImpl {
       -> std::vector<QueryResult>;
 
  private:
+  friend class QueryHandler;
   const std::string &path_;
   const DbOptions &options_;
   Schema schema_;
@@ -45,19 +46,6 @@ class DbImpl {
   auto SingleVectorKnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
 
-  struct Iter {
-    const std::string &field;
-    const Vector &query;
-    const Float weight;
-    std::unique_ptr<IvfFlatIterator> it;
-    std::unique_ptr<std::mutex> mutex = std::make_unique<std::mutex>();
-    Float last_seen_distance = std::numeric_limits<Float>::max();
-
-    // Constructor
-    Iter(const std::string &field, const Vector &query, Float weight,
-         std::unique_ptr<IvfFlatIterator> it)
-        : field(field), query(query), weight(weight), it(std::move(it)) {}
-  };  // Iterator for Faign's Threshold Algorithm
   auto MultiVectorKnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
 };  // class DbImpl
