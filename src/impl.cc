@@ -3,10 +3,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <execution>
 #include <iostream>
 #include <memory>
-#include <mutex>
 #include <queue>
 #include <ranges>
 #include <stdexcept>
@@ -263,6 +261,13 @@ auto DbImpl::MultiVectorKnnSearch(const Query &query, size_t nprobe) const
     -> std::vector<QueryResult> {
   auto handler = QueryHandler(*this, query);
   return handler.KnnSearch(nprobe);
+}
+
+auto DbImpl::KnnSearchIterativeMerge(const Query &query, size_t nprobe,
+                                     size_t k_threshold) const
+    -> std::vector<QueryResult> {
+  auto handler = QueryHandler(*this, query);
+  return handler.KnnSearchIterativeMerge(nprobe, k_threshold);
 }
 
 }  // namespace rox

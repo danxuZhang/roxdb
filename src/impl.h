@@ -33,6 +33,9 @@ class DbImpl {
   auto KnnSearch(const Query &query, size_t nprobe) const
       -> std::vector<QueryResult>;
 
+  auto KnnSearchIterativeMerge(const Query &query, size_t nprobe, size_t k_threshold) const
+      -> std::vector<QueryResult>;
+
  private:
   friend class QueryHandler;
   const std::string &path_;

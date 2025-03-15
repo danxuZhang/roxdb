@@ -1,6 +1,5 @@
 #pragma once
 
-#include <future>
 #include <mutex>
 
 #include "impl.h"
@@ -13,6 +12,8 @@ class QueryHandler {
   QueryHandler(const DbImpl &db, const Query &query) : db_(db), query_(query) {}
 
   auto KnnSearch(size_t nprobe) -> std::vector<QueryResult>;
+
+  auto KnnSearchIterativeMerge(size_t nprobe, size_t k_threshold) -> std::vector<QueryResult>;
 
  private:
   struct Iterator {
@@ -31,6 +32,9 @@ class QueryHandler {
 
   const DbImpl &db_;
   const Query &query_;
+
+  auto GetTopK(const std::string &field, const Vector &query, size_t k,
+               size_t nprobe) const -> std::vector<Key>;
 
 };  // class QueryHandler
 

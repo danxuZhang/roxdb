@@ -136,4 +136,10 @@ auto DB::KnnSearch(const Query &query, size_t nprobe) const
 }
 
 auto DB::FlushRecords() -> void { impl_->FlushRecords(); }
+
+auto DB::KnnSearchIterativeMerge(const Query &query, size_t nprobe,
+                                 size_t k_threshold) const
+    -> std::vector<QueryResult> {
+  return impl_->KnnSearchIterativeMerge(query, nprobe, k_threshold);
+}
 }  // namespace rox

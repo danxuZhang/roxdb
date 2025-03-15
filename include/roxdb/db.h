@@ -143,6 +143,10 @@ class DB {
   auto KnnSearch(const Query &query, size_t nprobe = 1) const
       -> std::vector<QueryResult>;
 
+  auto KnnSearchIterativeMerge(const Query &query, size_t nprobe,
+                               size_t k_threshold) const
+      -> std::vector<QueryResult>;
+
  private:
   std::unique_ptr<DbImpl> impl_;
 
